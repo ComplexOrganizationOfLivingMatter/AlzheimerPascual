@@ -1,9 +1,17 @@
 function [BW_img] = segmentationRedZoneOfDamage(pathFile)
 
     rawImg=imfinfo(pathFile);
-    for k = 1:length(rawImg)
-        rgbImage(:,:,k) = double(imread(pathFile,k));
-        figure; imshow(rgbImage(:,:,k));
+    maxValue = 4095;
+    for numChannel = 1:length(rawImg)
+         actualImgChannel = imread(pathFile,numChannel);
+         rawImages(:, :, numChannel) = actualImgChannel;
+         
+         %Transform them to gray
+         actualImgChannelGray = ind2rgb(actualImgChannel, gray(maxValue));
+         actualImgChannelGray = actualImgChannelGray(:, :, 1);
+         
+         greyImages(:,:,numChannel) = actualImgChannelGray;
+        figure; imshow(rgbImage(:,:,numChannel));
     end
     figure; imshow(rgbImage)
 
