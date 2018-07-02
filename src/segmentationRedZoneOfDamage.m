@@ -16,5 +16,11 @@ function [BW_img] = segmentationRedZoneOfDamage(pathFile)
          
          grayImages(:,:,numChannel) = actualImgChannelGray;
     end
-
+    
+    %Damage zone (Channel 3)
+    redZone = imbinarize(grayImages(:,:,3));
+    redZoneFilled = imfill(redZone, 'holes');
+    onlyRedZone = bwareafilt(redZoneFilled, 1);
+    finalRedZone = imdilate(onlyRedZone, strel('disk', 2));
+    
 end
