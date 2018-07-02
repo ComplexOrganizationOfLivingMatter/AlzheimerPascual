@@ -1,8 +1,10 @@
 function [BW_img] = segmentationRedZoneOfDamage(pathFile)
 
-    rawImg=imread(pathFile);
-    open(pathFile,1);
-    load(pathFile);
-    rgbImg=ind2rgb(cdata,colormap);
+    rawImg=imfinfo(pathFile);
+    for k = 1:length(rawImg)
+        rgbImage(:,:,k) = double(imread(pathFile,k));
+        figure; imshow(rgbImage(:,:,k));
+    end
+    figure; imshow(rgbImage)
 
 end
