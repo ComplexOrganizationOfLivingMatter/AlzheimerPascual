@@ -1,9 +1,10 @@
-function [BW_img] = segmentationRedZoneOfDamage(pathFile)
+function [finalRedZone] = processingImg(pathFile)
     % Channel 1: Neurons
     % Channel 2: Nuclei
     % Channel 3: Damage
     % Channel 4: Perfusion 
 
+    %Getting all the 
     rawImg=imfinfo(pathFile);
     maxValue = 4095;
     for numChannel = 1:length(rawImg)
