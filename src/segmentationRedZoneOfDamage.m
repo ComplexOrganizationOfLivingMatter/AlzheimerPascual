@@ -10,9 +10,7 @@ function [BW_img] = segmentationRedZoneOfDamage(pathFile)
          actualImgChannelGray = ind2rgb(actualImgChannel, gray(maxValue));
          actualImgChannelGray = actualImgChannelGray(:, :, 1);
          
-         greyImages(:,:,numChannel) = actualImgChannelGray;
-        figure; imshow(rgbImage(:,:,numChannel));
+         grayImages(:,:,numChannel) = actualImgChannelGray;
     end
-    figure; imshow(rgbImage)
 
 end
