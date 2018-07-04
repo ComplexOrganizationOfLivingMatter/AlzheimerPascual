@@ -5,8 +5,12 @@ function [finalRedZone] = processingImg(pathFile)
 % Channel 3: Damage (Red)
 % Channel 4: Perfusion (White)
 
+    micronsOfSurroundingZone = 5;
+    minSizeCellInMicrons = 3;
+    
     pixelWidthInMicrons = 0.3031224;
-    minCellSizeInPixels = 3/pixelWidthInMicrons;
+    minCellSizeInPixels = ceil(minSizeCellInMicrons/pixelWidthInMicrons)^2;
+    pixelsOfSurroundingZone = ceil(micronsOfSurroundingZone/pixelWidthInMicrons);
 
     %Getting all the initial information
     rawImg=imfinfo(pathFile);
@@ -27,6 +31,15 @@ function [finalRedZone] = processingImg(pathFile)
     redZoneFilled = imfill(redZone, 'holes');
     onlyRedZone = bwareafilt(redZoneFilled, 1);
     finalRedZone = imdilate(onlyRedZone, strel('disk', 2));
+    finalRedZone = imfill(finalRedZone, 'holes');
+    
+    redZoneDilated = imdilate(finalRedZone, strel('disk', pixelsOfSurroundingZone));
+    surroundingToRedZone = ~finalRedZone & redZoneDilated;
+    
+    redZoneAreaInMicrons = 
+    
+    figure; imshow(finalRedZone)
+    figure; imshow(surroundingToRedZone)
     
     %Locate neurons (Channel 1 and 2)
 %     figure; imshow(grayImages(:,:,1))
@@ -48,11 +61,16 @@ function [finalRedZone] = processingImg(pathFile)
 %     nucleiWatersheded(~nuclei) = 0;
 %     figure; imshow(double(nucleiWatersheded))
     
+    
+    neuronsAndMoreFilled = bwareafilt(neuronsAndMoreFilled, [minCellSizeInPixels Inf]);
+
     %With segmented images works better
     nucleiWithNeuron = imreconstruct(neuronsAndMoreFilled, nucleiFilled);
     figure; imshow(nucleiWithNeuron);
     %Remove smaller non-cell elements
     bwareafilt(nucleiWithNeuron, [minCellSizeInPixels Inf]);
+    
+    
     
     %works worse
     %figure; imshow(imreconstruct(grayImages(:, :, 2), grayImages(:, :,
