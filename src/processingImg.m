@@ -5,14 +5,14 @@ function [finalRedZone] = processingImg(pathFile)
 % Channel 3: Damage (Red)
 % Channel 4: Perfusion (White)
 
-    micronsOfSurroundingZone = 5;
+    micronsOfSurroundingZone = 10;
     minSizeCellInMicrons = 3;
     
     pixelWidthInMicrons = 0.3031224;
     minCellSizeInPixels = ceil(minSizeCellInMicrons/pixelWidthInMicrons)^2;
     pixelsOfSurroundingZone = ceil(micronsOfSurroundingZone/pixelWidthInMicrons);
 
-    %Getting all the initial information
+    %% Getting all the initial information
     rawImg=imfinfo(pathFile);
     maxValue = 4095;
     for numChannel = 1:length(rawImg)
@@ -26,22 +26,29 @@ function [finalRedZone] = processingImg(pathFile)
          grayImages(:,:,numChannel) = actualImgChannelGray;
     end
     
-    %Damage zone (Channel 3)
+    %% Damage zone (Channel 3)
     redZone = imbinarize(grayImages(:,:,3));
     redZoneFilled = imfill(redZone, 'holes');
     onlyRedZone = bwareafilt(redZoneFilled, 1);
     finalRedZone = imdilate(onlyRedZone, strel('disk', 2));
     finalRedZone = imfill(finalRedZone, 'holes');
     
-    redZoneDilated = imdilate(finalRedZone, strel('disk', pixelsOfSurroundingZone));
-    surroundingToRedZone = ~finalRedZone & redZoneDilated;
+    redZoneDilated = imdilate(finalRedZone, strel('disk', round(pixelsOfSurroundingZone/2)));
+    redZoneEroded = imerode(finalRedZone, strel('disk', round(pixelsOfSurroundingZone/2)));
+    %We catch a half of the red zone and half from outside it.
+    borderRedZone = ~redZoneEroded & redZoneDilated;
     
-    redZoneAreaInMicrons = 
+    redZoneAreaInMicrons = sum(finalRedZone(:)) * pixelWidthInMicrons;
+    %CARE: surrounding to red zone and outside red zone overlap between
+    %each other
+    borderRedZoneAreaInMicrons = sum(borderRedZone(:)) * pixelWidthInMicrons;
+    outsideRedZoneAreaInMicrons = sum(finalRedZone(:) == 0) * pixelWidthInMicrons;
     
-    figure; imshow(finalRedZone)
-    figure; imshow(surroundingToRedZone)
+%     figure; imshow(finalRedZone)
+%     figure; imshow(surroundingToRedZone)
     
-    %Locate neurons (Channel 1 and 2)
+    %
+    %% Locate neurons (Channel 1 and 2)
 %     figure; imshow(grayImages(:,:,1))
 %     figure; imshow(grayImages(:,:,2))
     neuronsAndMore = imbinarize(grayImages(:, :, 2),'global');
@@ -61,22 +68,35 @@ function [finalRedZone] = processingImg(pathFile)
 %     nucleiWatersheded(~nuclei) = 0;
 %     figure; imshow(double(nucleiWatersheded))
     
-    
     neuronsAndMoreFilled = bwareafilt(neuronsAndMoreFilled, [minCellSizeInPixels Inf]);
 
     %With segmented images works better
     nucleiWithNeuron = imreconstruct(neuronsAndMoreFilled, nucleiFilled);
-    figure; imshow(nucleiWithNeuron);
+    %figure; imshow(nucleiWithNeuron);
     %Remove smaller non-cell elements
-    bwareafilt(nucleiWithNeuron, [minCellSizeInPixels Inf]);
+    nucleiWithNeuronOnlyRealCells = bwareafilt(nucleiWithNeuron, [minCellSizeInPixels Inf]);
     
-    
+    labelledNeurons = bwlabel(nucleiWithNeuronOnlyRealCells);
     
     %works worse
     %figure; imshow(imreconstruct(grayImages(:, :, 2), grayImages(:, :,
     %1)))
     
-    %Calculate density
+    %% Calculate density
+    %Red zone density
+    neuronsInRedZone = unique(labelledNeurons.*finalRedZone);
+    neuronsInRedZone = neuronsInRedZone(neuronsInRedZone~=0);
+    %figure; imshow(ismember(labelledNeurons, neuronsInRedZone).*labelledNeurons, colorcube(200))
+    densityInRedZone = length(neuronsInRedZone)/redZoneAreaInMicrons;
     
+    %Border of red zone
+    neuronsAtBorder = unique(labelledNeurons.*borderRedZone);
+    neuronsAtBorder = neuronsAtBorder(neuronsAtBorder~=0);
+    densityAtBorder = length(neuronsAtBorder)/borderRedZoneAreaInMicrons;
+    
+    %Outside of the red zone
+    neuronsNoRedZone = unique(labelledNeurons.*(finalRedZone == 0));
+    neuronsNoRedZone = neuronsNoRedZone(neuronsNoRedZone~=0);
+    densityInNoRedZone = length(neuronsNoRedZone)/outsideRedZoneAreaInMicrons;
     
 end
