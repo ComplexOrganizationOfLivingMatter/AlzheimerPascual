@@ -78,24 +78,25 @@ function [finalRedZone] = processingImg(pathFile)
     
     labelledNeurons = bwlabel(nucleiWithNeuronOnlyRealCells);
     
-    %works worse
-    %figure; imshow(imreconstruct(grayImages(:, :, 2), grayImages(:, :,
-    %1)))
+    %% Calculate density:
+    % Cell per micra? or all the space occupied by cells per micra?
     
-    %% Calculate density
     %Red zone density
-    neuronsInRedZone = unique(labelledNeurons.*finalRedZone);
+    %neuronsInRedZone = unique(labelledNeurons.*finalRedZone);
+    neuronsInRedZone = labelledNeurons.*finalRedZone;
     neuronsInRedZone = neuronsInRedZone(neuronsInRedZone~=0);
     %figure; imshow(ismember(labelledNeurons, neuronsInRedZone).*labelledNeurons, colorcube(200))
     densityInRedZone = length(neuronsInRedZone)/redZoneAreaInMicrons;
     
     %Border of red zone
-    neuronsAtBorder = unique(labelledNeurons.*borderRedZone);
+    %neuronsAtBorder = unique(labelledNeurons.*borderRedZone);
+    neuronsAtBorder = labelledNeurons.*borderRedZone;
     neuronsAtBorder = neuronsAtBorder(neuronsAtBorder~=0);
     densityAtBorder = length(neuronsAtBorder)/borderRedZoneAreaInMicrons;
     
     %Outside of the red zone
-    neuronsNoRedZone = unique(labelledNeurons.*(finalRedZone == 0));
+    %neuronsNoRedZone = unique(labelledNeurons.*(finalRedZone == 0));
+    neuronsNoRedZone = labelledNeurons.*(finalRedZone == 0);
     neuronsNoRedZone = neuronsNoRedZone(neuronsNoRedZone~=0);
     densityInNoRedZone = length(neuronsNoRedZone)/outsideRedZoneAreaInMicrons;
     
