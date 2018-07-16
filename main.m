@@ -1,8 +1,11 @@
 
 addpath(genpath('src'));
-tifFiles = dir('Data/*.tif');
+tifFiles = dir('Data\NeuN*\**\*.tif');
 
-for numFile = 1:length(tifFiles)
+folderRows={tifFiles(:).folder}';
+[~, indicesFiles]=unique(folderRows);
+
+for numFile = indicesFiles'
     actualFile = tifFiles(numFile);
     processingImg(strcat(actualFile.folder, '/', actualFile.name));
 end

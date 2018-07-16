@@ -4,7 +4,11 @@ function [finalRedZone] = processingImg(pathFile)
 % Channel 2: Neurons (Green)
 % Channel 3: Damage (Red)
 % Channel 4: Perfusion (White)
-
+    for nChan=1:4
+        imchan=imread(strrep(pathFile,'C=0',['C=' num2str(nChan)-1]));
+        grayImages(:,:,nChan)=imchan;
+    end
+    
     micronsOfSurroundingZone = 10;
     minSizeCellInMicrons = 3;
     
