@@ -10,7 +10,7 @@ function [densityInRedZone, densityAtBorder, densityInNoRedZone] = processingImg
     
     pixelsOfSurroundingZone = 20;
     
-    nucleiRadiusRangeInMicrons = [2.5, 8];
+    nucleiRadiusRangeInMicrons = [3.2, 10];
     nucleiRadiusRangeInPixels = round(nucleiRadiusRangeInMicrons ./ pixelWidthInMicrons);
     
     pathFileSplitted = strsplit(strrep(pathFile, '\', '/'), '/');
@@ -72,11 +72,12 @@ function [densityInRedZone, densityAtBorder, densityInNoRedZone] = processingImg
     originalNeuronsAdjusted = imadjust(originalNeurons, [0 0.5]);
     neuronsAndMore = imbinarize(originalNeuronsAdjusted,'global');
     neuronsAndMoreAreaOpen = bwareaopen(neuronsAndMore, minObjectSizeInPixels2Delete);
-    neuronsAndMoreFilled = imfill(neuronsAndMoreAreaOpen, 'holes');
-    neuronsAndMoreErode=imerode(neuronsAndMoreFilled,strel('disk',2));
-    neuronsAndMoreFilled=imdilate(neuronsAndMoreErode,strel('disk',2));
-    neuronsAndMoreFilled = bwareaopen(neuronsAndMoreFilled, minObjectSizeInPixels2Delete, 4);
+    finalNeurons = imfill(neuronsAndMoreAreaOpen, 'holes');
+    neuronsAndMoreErode=imerode(finalNeurons,strel('disk',2));
+    finalNeurons=imdilate(neuronsAndMoreErode,strel('disk',2));
+    finalNeurons = bwareaopen(finalNeurons, minObjectSizeInPixels2Delete, 4);
 
+   
     %figure; imshow(neuronsAndMoreFilled)
 
 %     numberOfLevels = 10;
@@ -101,24 +102,26 @@ function [densityInRedZone, densityAtBorder, densityInNoRedZone] = processingImg
      nucleiBinarized = imbinarize(nucleiOriginalAdjusted);
      nucleiOpen = bwareaopen(nucleiBinarized, minObjectSizeInPixels2Delete);
      %figure;imshow(nucleiOpen);
-     nucleiWithNeuron = imreconstruct(neuronsAndMoreFilled, nucleiOpen);
+     nucleiWithNeuron = imreconstruct(finalNeurons, nucleiOpen);
      
      %figure; imshow(nuclei);
      nucleiFilled = imfill(nucleiWithNeuron, 'holes');
      
-     imwrite(neuronsAndMoreFilled, strcat(outputDir, '/neuronsSegmented.tif'));  
-     imwrite(imfill(nucleiOpen, 'holes'), strcat(outputDir, '/nucleiOfNeuronsSegmented.tif'));
+     finalNuclei = imfill(nucleiOpen, 'holes');
+     
+     imwrite(finalNeurons, strcat(outputDir, '/neuronsSegmented.tif'));  
+     imwrite(finalNuclei, strcat(outputDir, '/nucleiOfNeuronsSegmented.tif'));
      
      originalImageOnlyRealNuclei = double(nucleiFilled) .* double(nucleiOriginalAdjusted);
      originalImgNucleiAdjusted = imadjust(double(mat2gray(originalImageOnlyRealNuclei,[0,255])));
      figure('Visible', 'off'); imshow(ImgComposite)
-     [centers, radii] = imfindcircles(originalImgNucleiAdjusted, nucleiRadiusRangeInPixels, 'Sensitivity', 0.93);
+     [centers, radii] = imfindcircles(originalImgNucleiAdjusted, nucleiRadiusRangeInPixels, 'Sensitivity', 0.95);
      %hold on; viscircles(centers, radii, 'EdgeColor', 'b');
      
      %Remove centroids not in the neurons images
-     coordinatesNuclei = sub2ind(size(neuronsAndMoreFilled), round(centers(:, 2)), round(centers(:, 1)));
+     coordinatesNuclei = sub2ind(size(finalNeurons), round(centers(:, 2)), round(centers(:, 1)));
      
-     goodNuclei = neuronsAndMoreFilled(coordinatesNuclei);
+     goodNuclei = finalNeurons(coordinatesNuclei);
      
      %hold on; viscircles(centers(goodNuclei, :), radii(goodNuclei), 'EdgeColor', 'r');
      
@@ -134,21 +137,21 @@ function [densityInRedZone, densityAtBorder, densityInNoRedZone] = processingImg
      goodXs = nuclei2(goodIndices);
      
      overlappingCentroids = unique(sort([goodXs, goodYs], 2), 'rows');
-     areaOfNuclei1 = zeros(size(neuronsAndMoreFilled));
-     areaOfNuclei2 = zeros(size(neuronsAndMoreFilled));
+     areaOfNuclei1 = zeros(size(finalNeurons));
+     areaOfNuclei2 = zeros(size(finalNeurons));
      
      nucleiDuplicated = [];
      for numIndex = 1:size(overlappingCentroids, 1)
          centroidNuclei1 = round(finalNeuronsCentroid(overlappingCentroids(numIndex, 1), :));
          areaOfNuclei1(centroidNuclei1(1, 2), centroidNuclei1(1, 1)) = 1;
          radiusNuclei1 = bwdist(areaOfNuclei1) < finalNucleiRadius(overlappingCentroids(numIndex, 1));
-         areaCoveringNuclei1 = sum(neuronsAndMoreFilled(radiusNuclei1));
+         areaCoveringNuclei1 = sum(finalNeurons(radiusNuclei1));
          
          centroidNuclei2 = round(finalNeuronsCentroid(overlappingCentroids(numIndex, 2), :));
          areaOfNuclei2(centroidNuclei2(1, 2), centroidNuclei2(1, 1)) = 1;
          radiusNuclei2 = bwdist(areaOfNuclei2) < finalNucleiRadius(overlappingCentroids(numIndex, 2));
          
-         areaCoveringNuclei2 = sum(neuronsAndMoreFilled(radiusNuclei2));
+         areaCoveringNuclei2 = sum(finalNeurons(radiusNuclei2));
          
          if areaCoveringNuclei1 > areaCoveringNuclei2
              nucleiDuplicated(end+1) = overlappingCentroids(numIndex, 2);
@@ -162,7 +165,17 @@ function [densityInRedZone, densityAtBorder, densityInNoRedZone] = processingImg
      
      hold on; viscircles(finalNeuronsCentroid, finalNucleiRadius, 'EdgeColor', 'r','LineWidth',0.3);
      print(strcat(outputDir, '/compisiteWithNeurons.tif'), '-dtiff');
+     
+     overlapping = double(finalNuclei)*2 + double(finalNeurons);
+     colours = parula(4);
+     figure('Visible', 'off'); imshow(overlapping+1, colours);
+     hold on;
+    viscircles(finalNeuronsCentroid, finalNucleiRadius, 'EdgeColor', 'r','LineWidth',0.3);
+    colorbar('Ticks',[2,3,4]+0.5,...
+         'TickLabels',{ 'Neurons', 'Nuclei', 'Neurons+Nuclei'});
     
+    print(strcat(outputDir, '/nucleiNeuronsOverlapping.tif'), '-dtiff');
+     
     %% Calculate density:
     % Cell per micra?
     
@@ -175,11 +188,11 @@ function [densityInRedZone, densityAtBorder, densityInNoRedZone] = processingImg
     hold off
     alpha(.7)
     
-    print(strcat(outputDir, '/compisitePerZones.tif'), '-dtiff');
+    print(strcat(outputDir, '/compositePerZones.tif'), '-dtiff');
     
     %Red zone density
     
-    neuronsIndices = sub2ind(size(neuronsAndMoreFilled), round(finalNeuronsCentroid(:, 2)), round(finalNeuronsCentroid(:, 1)));
+    neuronsIndices = sub2ind(size(finalNeurons), round(finalNeuronsCentroid(:, 2)), round(finalNeuronsCentroid(:, 1)));
     hold on; viscircles(finalNeuronsCentroid, finalNucleiRadius, 'EdgeColor', 'r');
 
     print(strcat(outputDir, '/compisitePerZonesWithNeurons.tif'), '-dtiff');
