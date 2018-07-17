@@ -5,7 +5,7 @@ function [finalRedZone] = processingImg(pathFile)
 % Channel 3: Damage (Red)
 % Channel 4: Perfusion (White)
 
-    micronsOfSurroundingZone = 10;
+    micronsOfSurroundingZone = 5;
     minSizeCellInMicrons = 25;
     minObjectSizeDeleteCellsInMicrons=5;
     
@@ -13,6 +13,9 @@ function [finalRedZone] = processingImg(pathFile)
     minCellSizeInPixels = ceil(minSizeCellInMicrons/pixelWidthInMicrons)^2;
     pixelsOfSurroundingZone = ceil(micronsOfSurroundingZone/pixelWidthInMicrons);
     minObjectSizeInPixels2Delete= ceil(minObjectSizeDeleteCellsInMicrons/pixelWidthInMicrons)^2;
+    
+    cellRadiusRangeInMicrons = [3, 8];
+    cellRadiusRangeInPixels = round(cellRadiusRangeInMicrons ./ pixelWidthInMicrons);
     
     %% Getting all the initial information
 %     rawImg=imfinfo(pathFile);
@@ -44,8 +47,8 @@ function [finalRedZone] = processingImg(pathFile)
     finalRedZone = imerode(finalRedZone, strel('disk', 5));
     
     %We catch a half of the red zone and half from outside perimeter it.
-    perimeterRedZone=bwperim(finalRedZone);
-    borderRedZone = imdilate(perimeterRedZone, strel('disk', round(pixelsOfSurroundingZone/2)));
+    perimeterRedZone = bwperim(finalRedZone);
+    borderRedZone = imdilate(perimeterRedZone, strel('disk', round(pixelsOfSurroundingZone)));
     
     redZoneAreaInMicrons = sum(finalRedZone(:)) * pixelWidthInMicrons^2;
     %CARE: surrounding to red zone and outside red zone overlap between
@@ -61,19 +64,63 @@ function [finalRedZone] = processingImg(pathFile)
 %     figure; imshow(grayImages(:,:,1))
 %     figure; imshow(grayImages(:,:,2))
     neuronsAndMore = imbinarize(grayImages(:, :, 2),'global');
-    neuronsAndMoreAreaOpen = bwareaopen(neuronsAndMore,minObjectSizeInPixels2Delete);
+    neuronsAndMoreAreaOpen = bwareaopen(neuronsAndMore, minObjectSizeInPixels2Delete);
     neuronsAndMoreFilled = imfill(neuronsAndMoreAreaOpen, 'holes');
     neuronsAndMoreErode=imerode(neuronsAndMoreFilled,strel('disk',2));
     neuronsAndMoreDilate=imdilate(neuronsAndMoreErode,strel('disk',2));
 
     %figure; imshow(neuronsAndMoreFilled)
 
+%     numberOfLevels = 10;
+%     level = multithresh(grayImages(:, :, 1), numberOfLevels);
+    G = grayImages(:, :, 1);
+     G_he = histeq(G);
 
-    nuclei = imbinarize(grayImages(:, :, 1));
-    nucleiOpen = bwareaopen(nuclei,minObjectSizeInPixels2Delete);
+     % We modify G regarding intensity property. Get a treshold overlapping 3 diferent layers to obtein the most representative data.
+     J=adapthisteq(G);
+     meanJ=mean(mean(J));
+     h3=(meanJ/3); h15=(meanJ/1.5); h2=meanJ/2;
+     
+     BWmin3 = imextendedmin(G,h3);
+     BWmin2 = imextendedmin(G,h2);
+     BWmin15 = imextendedmin(G,h15);
+     
+     
+     BWmin = BWmin15 | BWmin3 | BWmin2;
+     
+     nucleiBinarized = 1 - BWmin;
+     nucleiOpen = bwareaopen(nucleiBinarized, minObjectSizeInPixels2Delete);
 
-    %figure; imshow(nuclei);
-    nucleiFilled = imfill(nucleiOpen, 'holes');
+     %neuronsAndMoreFilled = bwareafilt(neuronsAndMoreFilled, [minCellSizeInPixels Inf]);
+     
+     nucleiWithNeuron = imreconstruct(neuronsAndMoreFilled, nucleiOpen);
+     
+     %figure; imshow(nuclei);
+     nucleiFilled = imfill(nucleiWithNeuron, 'holes');
+     
+     originalImageOnlyRealNuclei = double(nucleiFilled) .* double(grayImages(:, : ,1));
+     originalImgNucleiAdjusted = imadjust(double(mat2gray(originalImageOnlyRealNuclei,[0,255])));
+     figure; imshow(imadjust(grayImages(:, : ,2)))
+     [centers, radii, metric] = imfindcircles(originalImgNucleiAdjusted, cellRadiusRangeInPixels, 'Sensitivity', 0.93);
+     hold on; viscircles(centers, radii, 'EdgeColor', 'b');
+     
+     %Remove centroids not in the neurons images
+     [xPixNeurons, yPixNeurons]= find(neuronsAndMoreFilled);
+     
+     coordinatesNuclei = sub2ind(size(neuronsAndMoreFilled), round(centers(:, 2)), round(centers(:, 1)));
+     
+     goodNuclei = neuronsAndMoreFilled(coordinatesNuclei);
+     
+     hold on; viscircles(centers(goodNuclei, :), radii(goodNuclei), 'EdgeColor', 'r');
+     
+%     level = graythresh(grayImages(:, :, 1));
+%     nuclei = imbinarize(grayImages(:, :, 1), level);
+%     nucleiOpen = bwareaopen(nuclei,minObjectSizeInPixels2Delete);
+% 
+%     %figure; imshow(nuclei);
+%     nucleiFilled = imfill(nucleiOpen, 'holes');
+    
+%     figure; imshow(nucleiFilled)
     
 %     nucleiFilled = imfill(nuclei, 'holes');
 %     nuclei = nucleiFilled;
@@ -95,7 +142,7 @@ function [finalRedZone] = processingImg(pathFile)
     labelledNeurons = bwlabel(nucleiWithNeuronOnlyRealCells);
     
     %% Calculate density:
-    % Cell per micra? or all the space occupied by cells per micra?
+    % Cell per micra?
     
     %Red zone density
     %neuronsInRedZone = unique(labelledNeurons.*finalRedZone);
