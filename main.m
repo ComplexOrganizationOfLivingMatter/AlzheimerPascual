@@ -1,5 +1,5 @@
 addpath(genpath('src'));
-tifFiles = dir('Data\NeuN*\**\*.tif');
+tifFiles = dir('Data/NeuN*/**/*.tif');
 
 folderRows={tifFiles(:).folder}';
 [~, indicesFiles]=unique(folderRows);
