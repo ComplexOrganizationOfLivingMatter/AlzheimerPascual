@@ -4,18 +4,14 @@ function [densityInRedZone, densityAtBorder, densityInNoRedZone] = processingImg
 % Channel 2: Neurons (Green)
 % Channel 3: Damage (Red)
 % Channel 4: Perfusion (White)
-
-    micronsOfSurroundingZone = 5;
-    minSizeCellInMicrons = 25;
-    minObjectSizeDeleteCellsInMicrons=5;
     
     pixelWidthInMicrons = 0.3031224;
-    minCellSizeInPixels = ceil(minSizeCellInMicrons/pixelWidthInMicrons)^2;
-    pixelsOfSurroundingZone = ceil(micronsOfSurroundingZone/pixelWidthInMicrons);
-    minObjectSizeInPixels2Delete= ceil(minObjectSizeDeleteCellsInMicrons/pixelWidthInMicrons)^2;
+    minObjectSizeInPixels2Delete= round(pi*(7.5^2));
     
-    cellRadiusRangeInMicrons = [3, 8];
-    cellRadiusRangeInPixels = round(cellRadiusRangeInMicrons ./ pixelWidthInMicrons);
+    pixelsOfSurroundingZone = 20;
+    
+    nucleiRadiusRangeInMicrons = [2.5, 8];
+    nucleiRadiusRangeInPixels = round(nucleiRadiusRangeInMicrons ./ pixelWidthInMicrons);
     
     pathFileSplitted = strsplit(strrep(pathFile, '\', '/'), '/');
     outputDir = strcat('results/', strjoin(pathFileSplitted(end-3:end-1), '/'));
@@ -72,7 +68,9 @@ function [densityInRedZone, densityAtBorder, densityInNoRedZone] = processingImg
     %% Locate neurons (Channel 1 and 2)
 %     figure; imshow(grayImages(:,:,1))
 %     figure; imshow(grayImages(:,:,2))
-    neuronsAndMore = imbinarize(grayImages(:, :, 2),'global');
+    originalNeurons = grayImages(:, :, 2);
+    originalNeuronsAdjusted = imadjust(originalNeurons, [0 0.5]);
+    neuronsAndMore = imbinarize(originalNeuronsAdjusted,'global');
     neuronsAndMoreAreaOpen = bwareaopen(neuronsAndMore, minObjectSizeInPixels2Delete);
     neuronsAndMoreFilled = imfill(neuronsAndMoreAreaOpen, 'holes');
     neuronsAndMoreErode=imerode(neuronsAndMoreFilled,strel('disk',2));
@@ -100,7 +98,6 @@ function [densityInRedZone, densityAtBorder, densityInNoRedZone] = processingImg
      %figure;imshow(double(mat2gray(B,[0,255])))
      
      nucleiOriginalAdjusted = imadjust(grayImages(:, :, 1), [0 0.5]);
-     
      nucleiBinarized = imbinarize(nucleiOriginalAdjusted);
      nucleiOpen = bwareaopen(nucleiBinarized, minObjectSizeInPixels2Delete);
      %figure;imshow(nucleiOpen);
@@ -115,7 +112,7 @@ function [densityInRedZone, densityAtBorder, densityInNoRedZone] = processingImg
      originalImageOnlyRealNuclei = double(nucleiFilled) .* double(nucleiOriginalAdjusted);
      originalImgNucleiAdjusted = imadjust(double(mat2gray(originalImageOnlyRealNuclei,[0,255])));
      figure('Visible', 'off'); imshow(ImgComposite)
-     [centers, radii] = imfindcircles(originalImgNucleiAdjusted, cellRadiusRangeInPixels, 'Sensitivity', 0.93);
+     [centers, radii] = imfindcircles(originalImgNucleiAdjusted, nucleiRadiusRangeInPixels, 'Sensitivity', 0.93);
      %hold on; viscircles(centers, radii, 'EdgeColor', 'b');
      
      %Remove centroids not in the neurons images
