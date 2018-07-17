@@ -28,3 +28,4 @@ codegen/
 octave-workspace
 
 /Data/
+*.tif
