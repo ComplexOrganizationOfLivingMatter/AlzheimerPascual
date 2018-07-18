@@ -166,6 +166,40 @@ function [densityInRedZone, densityAtBorder, densityInNoRedZone] = processingImg
      hold on; viscircles(finalNeuronsCentroid, finalNucleiRadius, 'EdgeColor', 'r','LineWidth',0.3);
      print(strcat(outputDir, '/compisiteWithNeurons.tif'), '-dtiff');
      
+     %Exist some nuclei+neurons within a neuron unassigned with a circle
+     overlappingNeuronsAndNuclei = finalNuclei & finalNeurons;
+     overlappingLabelled = bwlabel(overlappingNeuronsAndNuclei);
+     indicesFinalNeuronsCentroid = sub2ind(size(overlappingLabelled), round(finalNeuronsCentroid(:, 2)), round(finalNeuronsCentroid(:, 1)));
+     circleImg = zeros(size(overlappingLabelled));
+     circleImg(indicesFinalNeuronsCentroid) = 1;
+     circleImgDilated = imdilate(circleImg, strel('disk', round(mean(finalNucleiRadius))));
+     allNuclei = 1:max(overlappingLabelled(:));
+     remainingNucleiIDs = ismember(allNuclei, unique(overlappingLabelled .* circleImgDilated)');
+     remainingNucleiIDs = allNuclei(remainingNucleiIDs == 0);
+     
+     figure; imshow(ismember(overlappingLabelled, remainingNucleiIDs))
+     
+     %Remaining nuclei unassigned
+     remainingNucleiImg = ismember(overlappingLabelled, remainingNucleiIDs);
+     indicesRemainingNuclei = remainingNucleiImg;
+     figure; imshow(finalNeurons)
+     labelledNeurons = bwlabel(finalNeurons);
+     
+     %Check which neurons have any nuclei unassigned
+     idsLabelledNeurons = unique(labelledNeurons(indicesFinalNeuronsCentroid));
+     idsOfRemainingNeurons = unique(labelledNeurons(indicesRemainingNuclei));
+     neuronsWithNucleiUnassigned = setdiff(idsOfRemainingNeurons, idsLabelledNeurons);
+     imgRemainingNucleiLabelled = overlappingLabelled .* remainingNucleiImg;
+     
+     %Get centroid of nuclei
+     centroidsOfNucleiUnassigned = regionprops(imgRemainingNucleiLabelled, {'Centroid', 'Area'});
+     centroidsOfNucleiUnassigned = vertcat(centroidsOfNucleiUnassigned.Centroid);
+     
+     centroidsOfNucleiUnassigned(isnan(centroidsOfNucleiUnassigned(:, 1)), :) = [];
+     indicesCentroidsNuclei = sub2ind(size(overlappingLabelled), round(centroidsOfNucleiUnassigned(:, 2)), round(centroidsOfNucleiUnassigned(:, 1)));
+     
+     labelledNeurons(indicesCentroidsNuclei)
+     
      overlapping = double(finalNuclei)*2 + double(finalNeurons);
      colours = parula(4);
      figure('Visible', 'off'); imshow(overlapping+1, colours);
