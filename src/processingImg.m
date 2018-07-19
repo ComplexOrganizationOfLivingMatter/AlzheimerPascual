@@ -5,32 +5,22 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
 % Channel 3: Damage (Red)
 % Channel 4: Perfusion (White)
 
+    %% Initial variables
     minRedAreaPixels=8000;
     pixelWidthInMicrons = 0.3031224;
     minObjectSizeInPixels2Delete= round(pi*(7.5^2));
     
     pixelsOfSurroundingZone = 20;
     
-    nucleiRadiusRangeInMicrons = [3, 10];
+    nucleiRadiusRangeInMicrons = [5, 10];
     nucleiRadiusRangeInPixels = round(nucleiRadiusRangeInMicrons ./ pixelWidthInMicrons);
     
     pathFileSplitted = strsplit(strrep(pathFile, '\', '/'), '/');
     outputDir = strcat('results/', strjoin(pathFileSplitted(end-3:end-1), '/'));
     
     mkdir(outputDir);
-    %% Getting all the initial information
-%     rawImg=imfinfo(pathFile);
-%     maxValue = 4095;
-%     for numChannel = 1:length(rawImg)
-%          actualImgChannel = imread(pathFile,numChannel);
-%          rawImages(:, :, numChannel) = actualImgChannel;
-%          
-%          %Transform them to gray
-%          actualImgChannelGray = ind2rgb(actualImgChannel, gray(maxValue));
-%          actualImgChannelGray = actualImgChannelGray(:, :, 1);
-%          
-%          grayImages(:,:,numChannel) = actualImgChannelGray;
-%     end
+
+    %% Getting the three necessary channels
     B=imread(pathFile);
     G=imread(strrep(pathFile,'C=0','C=1'));
     R=imread(strrep(pathFile,'C=0','C=2'));
@@ -48,7 +38,6 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
     areaRedZone=regionprops(redZoneFilled,'Area');
     redZoneFilledLabelled= bwlabel(redZoneFilled);
     onlyRedZone=ismember(redZoneFilledLabelled,find(cat(1,areaRedZone.Area)>minRedAreaPixels));
-    %onlyRedZone = bwareafilt(redZoneFilled, 1);
     finalRedZone = imdilate(onlyRedZone, strel('disk', 5));
     finalRedZone = imfill(finalRedZone, 'holes');
     finalRedZone = imerode(finalRedZone, strel('disk', 5));
@@ -61,51 +50,25 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
     finalRedZone = finalRedZone | borderRedZone;
     
     redZoneAreaInMicrons = sum(finalRedZone(:)) * pixelWidthInMicrons^2;
-    %CARE: surrounding to red zone and outside red zone overlap between
-    %each other
-%     borderRedZoneAreaInMicrons = sum(borderRedZone(:)) * pixelWidthInMicrons^2;
     outsideRedZoneAreaInMicrons = sum(finalRedZone(:) == 0) * pixelWidthInMicrons^2;
     
-%     figure; imshow(finalRedZone)
-%     figure; imshow(surroundingToRedZone)
+    %Remove the plaque from the red zone 
     
-    %
+    
     %% Locate neurons (Channel 1 and 2)
-%     figure; imshow(grayImages(:,:,1))
-%     figure; imshow(grayImages(:,:,2))
     originalNeurons = grayImages(:, :, 2);
-    originalNeuronsAdjusted = imadjust(originalNeurons, [0 0.5]);
-    neuronsAndMore = imbinarize(originalNeuronsAdjusted,'global');
+    originalNeuronsAdjusted = adapthisteq(originalNeurons);
+    neuronsAndMore = imbinarize(originalNeuronsAdjusted,'adaptive','Sensitivity',0.05);
     neuronsAndMoreAreaOpen = bwareaopen(neuronsAndMore, minObjectSizeInPixels2Delete);
     finalNeurons = imfill(neuronsAndMoreAreaOpen, 'holes');
     neuronsAndMoreErode=imerode(finalNeurons,strel('disk',2));
     finalNeurons=imdilate(neuronsAndMoreErode,strel('disk',2));
     finalNeurons = bwareaopen(finalNeurons, minObjectSizeInPixels2Delete, 4);
-
-   
-    %figure; imshow(neuronsAndMoreFilled)
-
-%     numberOfLevels = 10;
-%     level = multithresh(grayImages(:, :, 1), numberOfLevels);
-%     G = grayImages(:, :, 1);
-%      G_he = histeq(G);
-
-     % We modify G regarding intensity property. Get a treshold overlapping 3 diferent layers to obtein the most representative data.
-%      J=adapthisteq(G);
-%      meanJ=mean(mean(J));
-%      h3=(meanJ/3); h15=(meanJ/1.5); h2=meanJ/2;
-     
-%      BWmin3 = imextendedmin(G,h3);
-%      BWmin2 = imextendedmin(G,h2);
-%      BWmin15 = imextendedmin(G,h15);
-%      
-     %BWmin = BWmin15 | BWmin3 | BWmin2;
-     %figure;imshow(nucleiBinarized);
-     %figure;imshow(double(mat2gray(B,[0,255])))
-     
+    figure;imshow(finalNeurons);
+    
      %% Nuclei
-     nucleiOriginalAdjusted = adapthisteq(grayImages(:, :, 1));
-     nucleiBinarized = imbinarize(nucleiOriginalAdjusted);
+     nucleiOriginalAdjusted = adapthisteq(grayImages(:, :, 1)); %grayImages(:, :, 1);
+     nucleiBinarized = imbinarize(nucleiOriginalAdjusted, 'adaptive');
      nucleiOpen = bwareaopen(nucleiBinarized, minObjectSizeInPixels2Delete);
      %figure;imshow(nucleiOpen);
      nucleiWithNeuron = imreconstruct(finalNeurons, nucleiOpen);
@@ -176,7 +139,7 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
      % Remove overlapping areas very small
      overlappingNeuronsAndNuclei = finalNuclei & finalNeurons;
      overlappingLabelled = bwlabel(overlappingNeuronsAndNuclei);
-     overlappingNeuronsAndNucleiEroded = imerode(overlappingNeuronsAndNuclei, strel('disk', round(nucleiRadiusRangeInPixels(1)/4)));
+     overlappingNeuronsAndNucleiEroded = imerode(overlappingNeuronsAndNuclei, strel('disk', round(nucleiRadiusRangeInPixels(1)/3)));
      biggerAreasOfOverlapping = unique(overlappingLabelled .* overlappingNeuronsAndNucleiEroded);
      overlappingLabelled  = ismember(overlappingLabelled, biggerAreasOfOverlapping) .* overlappingLabelled;
      
@@ -208,42 +171,6 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
      finalCentroidCircles = [finalCentroidCircles; vertcat(newNeurons.Centroid)];
      finalRadiusCircles = [finalRadiusCircles; vertcat(newNeurons.MajorAxisLength)/2];
      
-%      allNuclei = 1:max(overlappingLabelled(:));
-%      remainingNucleiIDs = ismember(allNuclei, unique(overlappingLabelled .* circleImgDilated)');
-%      remainingNucleiIDs = allNuclei(remainingNucleiIDs == 0);
-%      
-%      %figure; imshow(ismember(overlappingLabelled, remainingNucleiIDs))
-%      
-%      %Remaining nuclei unassigned
-%      remainingNucleiImg = ismember(overlappingLabelled, remainingNucleiIDs);
-%      indicesRemainingNuclei = remainingNucleiImg;
-%      %figure; imshow(finalNeurons)
-%      
-%      %Check which neurons have any nuclei unassigned
-%      idsLabelledNeurons = unique(labelledNeurons(indicesFinalNeuronsCentroid));
-%      idsOfRemainingNeurons = unique(labelledNeurons(indicesRemainingNuclei));
-%      neuronsWithNucleiUnassigned = setdiff(idsOfRemainingNeurons, idsLabelledNeurons);
-%      imgRemainingNucleiLabelled = overlappingLabelled .* remainingNucleiImg;
-%      
-%      %Get centroid of nuclei
-%      centroidsOfNucleiUnassigned = regionprops(imgRemainingNucleiLabelled, 'Centroid');
-%      centroidsOfNucleiUnassigned = vertcat(centroidsOfNucleiUnassigned.Centroid);
-%      
-%      centroidsOfNucleiUnassigned(isnan(centroidsOfNucleiUnassigned(:, 1)), :) = [];
-%      indicesCentroidsNuclei = sub2ind(size(overlappingLabelled), round(centroidsOfNucleiUnassigned(:, 2)), round(centroidsOfNucleiUnassigned(:, 1)));
-%      
-%      nucleiBelongingToNeurons = labelledNeurons(indicesCentroidsNuclei);
-%      
-%      neuronsToLabel = unique(nucleiBelongingToNeurons);
-%      
-%      for numNeuron = 1:length(neuronsToLabel)
-%          actualNeuron = neuronsToLabel(numNeuron);
-%          
-%          actualNuclei = find(actualNeuron == nucleiBelongingToNeurons);
-%          %zoneOverlapped = ismember(, actualNuclei).*overlappingLabelled;
-%          %areaPerNuclei = regionprops(, 'Area');
-%          areaPerNuclei = areaPerNuclei(actualNuclei).Area;
-%      end
      
      overlapping = double(finalNuclei)*2 + double(finalNeurons);
      colours = parula(4);
@@ -276,17 +203,14 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
 
     print(strcat(outputDir, '/compositePerZonesWithNeurons.tif'), '-dtiff');
     
-    if contains(lower(pathfile), 'wt')
-            %figure; imshow(ismember(labelledNeurons, neuronsInRedZone).*labelledNeurons, colorcube(200))
+    if contains(lower(pathFile), 'wt') == 0
+        %figure; imshow(ismember(labelledNeurons, neuronsInRedZone).*labelledNeurons, colorcube(200))
         densityInRedZone = sum(zonesOfImage(neuronsIndices) == 1)/redZoneAreaInMicrons;
-
-        %Border of red zone
-    %     densityAtBorder = length(zonesOfImage(neuronsIndices) == 2)/borderRedZoneAreaInMicrons;
 
         %Outside of the red zone
         densityInNoRedZone = length(zonesOfImage(neuronsIndices) == 3)/outsideRedZoneAreaInMicrons;
     else
-        densityInRedZone = 
+        densityInRedZone = length(zonesOfImage(neuronsIndices) > 0) / (redZoneAreaInMicrons + outsideRedZoneAreaInMicrons);
         densityInNoRedZone = 0;
     end
 
