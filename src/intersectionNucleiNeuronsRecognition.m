@@ -1,5 +1,6 @@
-function [finalCentroidCircles, finalRadiusCircles] = intersectionNucleiNeuronsRecognition(nucleiWithNeuron,nucleiOriginalAdjusted,finalNeurons,ImgComposite,nucleiRadiusRangeInPixels,radiusOverlapping)
+function [finalCentroidCircles, finalRadiusCircles] = intersectionNucleiNeuronsRecognition(outputDir, grayImages, nucleiWithNeuron,finalNeurons,ImgComposite,nucleiRadiusRangeInPixels,radiusOverlapping)
 
+    nucleiOriginalAdjusted = adapthisteq(grayImages(:, :, 1));
      originalImageOnlyRealNuclei = double(nucleiWithNeuron) .* double(nucleiOriginalAdjusted);
      originalImgNucleiAdjusted = imadjust(double(mat2gray(originalImageOnlyRealNuclei,[0,255])));
      figure('Visible', 'off'); imshow(ImgComposite)

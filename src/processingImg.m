@@ -36,13 +36,13 @@ function [densityInRedZone, densityInNoRedZone] = refactoredProcessingImg(pathFi
     ImgComposite=R+G+B;
     
     %% Segment red zone
-    [finalRedZone,redZoneAreaInMicrons,outsideRedZoneAreaInMicrons] = segmentDamageRedZone(grayImages,minRedAreaPixels,pixelsOfSurroundingZone,pixelWidthInMicrons);
+    [finalRedZone,redZoneAreaInMicrons,outsideRedZoneAreaInMicrons] = segmentDamageRedZone(grayImages,minRedAreaPixels,pixelsOfSurroundingZone,pixelWidthInMicrons, outputDir);
     
     %% Segment neurons and nuclei
     [finalNeurons,finalNuclei,nucleiWithNeuron] = segmentNeuronsAndNuclei(grayImages,minObjectSizeInPixels2Delete,outputDir);
 
     %% Get intersection of neurons with nuclei
-    [finalCentroidCircles, finalRadiusCircles] = intersectionNucleiNeuronsRecognition(nucleiWithNeuron,nucleiOriginalAdjusted,finalNeurons,ImgComposite,nucleiRadiusRangeInPixels,radiusOverlapping);
+    [finalCentroidCircles, finalRadiusCircles] = intersectionNucleiNeuronsRecognition(outputDir, grayImages, nucleiWithNeuron,finalNeurons,ImgComposite,nucleiRadiusRangeInPixels,radiusOverlapping);
     
     %% Get neuron+nucleus that were not assigned in the circular shape recognition
     [finalCentroidCircles,finalRadiusCircles] = reassigningNotRecognizedNucleiNeurons(finalNuclei,finalNeurons,nucleiRadiusRangeInPixels,finalCentroidCircles,finalRadiusCircles,outputDir);
