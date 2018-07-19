@@ -14,8 +14,6 @@ function [finalRedZone,redZoneAreaInMicrons,outsideRedZoneAreaInMicrons] = segme
 %     perimeterRedZone = bwperim(finalRedZone);
 %     borderRedZone = imdilate(perimeterRedZone, strel('disk', round(pixelsOfSurroundingZone)));
 %     finalRedZone = finalRedZone | borderRedZone;
-    
-    
 
     redZoneAreaInMicrons = sum(finalRedZone(:)) * pixelWidthInMicrons^2;
     outsideRedZoneAreaInMicrons = sum(finalRedZone(:) == 0) * pixelWidthInMicrons^2;
@@ -37,6 +35,10 @@ function [finalRedZone,redZoneAreaInMicrons,outsideRedZoneAreaInMicrons] = segme
     plaqueDetection = plaqueDetection & imbinarize(adapthisteq(grayImages(:,:,1)), 'adaptive');
     plaqueDetection = imfill(plaqueDetection, 'holes');
     plaqueDetection = bwareaopen(plaqueDetection, 500);
+    
+    plaqueDetection = imdilate(plaqueDetection, strel('disk', 5));
+    plaqueDetection = imfill(plaqueDetection, 'holes');
+    plaqueDetection = imerode(plaqueDetection, strel('disk', 5));
     
     finalRedZone(plaqueDetection) = 0;
     imwrite(finalRedZone, strcat(outputDir, '/redZoneSegmented.tif'));
