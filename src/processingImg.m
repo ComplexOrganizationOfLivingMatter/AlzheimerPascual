@@ -10,9 +10,11 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
     pixelWidthInMicrons = 0.3031224;
     minObjectSizeInPixels2Delete= round(pi*(7.5^2));
     
+    radiusOverlapping = 1.3;
+    
     pixelsOfSurroundingZone = 20;
     
-    nucleiRadiusRangeInMicrons = [5, 10];
+    nucleiRadiusRangeInMicrons = [5, 12];
     nucleiRadiusRangeInPixels = round(nucleiRadiusRangeInMicrons ./ pixelWidthInMicrons);
     
     pathFileSplitted = strsplit(strrep(pathFile, '\', '/'), '/');
@@ -64,7 +66,6 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
     neuronsAndMoreErode=imerode(finalNeurons,strel('disk',2));
     finalNeurons=imdilate(neuronsAndMoreErode,strel('disk',2));
     finalNeurons = bwareaopen(finalNeurons, minObjectSizeInPixels2Delete, 4);
-    figure;imshow(finalNeurons);
     
      %% Nuclei
      nucleiOriginalAdjusted = adapthisteq(grayImages(:, :, 1)); %grayImages(:, :, 1);
@@ -92,14 +93,14 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
      
      goodNuclei = finalNeurons(coordinatesNuclei);
      
-     %hold on; viscircles(centers(goodNuclei, :), radii(goodNuclei), 'EdgeColor', 'r');
+     hold on; viscircles(centers(goodNuclei, :), radii(goodNuclei), 'EdgeColor', 'b');
      
      %Remove overlapping centroids
      finalCentroidCircles = centers(goodNuclei, :);
      finalRadiusCircles = radii(goodNuclei);
      distanceBetweenRealNuclei = squareform(pdist(finalCentroidCircles));
      
-     p2 = distanceBetweenRealNuclei <= (finalRadiusCircles);
+     p2 = distanceBetweenRealNuclei <= (finalRadiusCircles*radiusOverlapping);
      [nuclei1, nuclei2] = find(p2);
      goodIndices = nuclei1 ~= nuclei2;
      goodYs = nuclei1(goodIndices);
@@ -113,12 +114,12 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
      for numIndex = 1:size(overlappingCentroids, 1)
          centroidNuclei1 = round(finalCentroidCircles(overlappingCentroids(numIndex, 1), :));
          areaOfNuclei1(centroidNuclei1(1, 2), centroidNuclei1(1, 1)) = 1;
-         radiusNuclei1 = bwdist(areaOfNuclei1) < finalRadiusCircles(overlappingCentroids(numIndex, 1));
+         radiusNuclei1 = bwdist(areaOfNuclei1) < (finalRadiusCircles(overlappingCentroids(numIndex, 1)));
          areaCoveringNuclei1 = sum(finalNeurons(radiusNuclei1));
          
          centroidNuclei2 = round(finalCentroidCircles(overlappingCentroids(numIndex, 2), :));
          areaOfNuclei2(centroidNuclei2(1, 2), centroidNuclei2(1, 1)) = 1;
-         radiusNuclei2 = bwdist(areaOfNuclei2) < finalRadiusCircles(overlappingCentroids(numIndex, 2));
+         radiusNuclei2 = bwdist(areaOfNuclei2) < (finalRadiusCircles(overlappingCentroids(numIndex, 2)));
          
          areaCoveringNuclei2 = sum(finalNeurons(radiusNuclei2));
          
@@ -146,7 +147,6 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
      % Obtaining centroids of circles
      indicesFinalNeuronsCentroid = sub2ind(size(overlappingLabelled), round(finalCentroidCircles(:, 2)), round(finalCentroidCircles(:, 1)));
      circleImg = zeros(size(overlappingLabelled));
-     
      
      labelledNeurons = bwlabel(finalNeurons);
      imageNotMarkedNuclei = labelledNeurons;
