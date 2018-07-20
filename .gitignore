@@ -28,5 +28,7 @@ codegen/
 octave-workspace
 
 /Data/
+/results/
 *.tif
 *.zip
+*.xlsx
