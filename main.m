@@ -14,13 +14,13 @@ nSample=cell(size(indicesFiles,1),1);
 count=1;
 
 for numFile = indicesFiles(1:end)'
-    actualFile = tifFiles(numFile)
+    actualFile = tifFiles(numFile);
     [densityInRedZone{count}, densityInNoRedZone{count}] = processingImg(strcat(actualFile.folder, '/', actualFile.name));
     splittedNames=strsplit(actualFile.folder,'\');
     
     nameFolder(count)=splittedNames(end-1);
     nSample(count)=splittedNames(end);
-    
+    disp([nameFolder{count} ' - ' nSample{count}])
     count=count+1;
 end
 

@@ -44,17 +44,17 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
     ImgComposite=R+G+B;
     
     %% Getting invalid region
-    if length(grayImages) == 5
+    if size(grayImages,3) == 5
         invalidRegion = grayImages(:, :, 5);
         invalidRegion = invalidRegion>0;
         invalidRegionAreaInMicrons = sum(invalidRegion(:)) * pixelWidthInMicrons^2;
         for numChannel = 1:numChannels-1
             actualChannel = grayImages(:, :, numChannel);
             actualChannel(invalidRegion) = 0;
-            grayImages(:, :, actualChannel) = actualChannel;
+            grayImages(:, :, numChannel) = actualChannel;
         end
     else
-        invalidRegion = zeros(size(grayImages(:, :, 5)));
+        invalidRegion = zeros(size(grayImages(:, :, 1)));
         invalidRegionAreaInMicrons = 0;
     end
     
@@ -73,7 +73,7 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
     %% Final Representation
     zonesOfImage = ones(size(finalRedZone));
     zonesOfImage(finalRedZone == 0) = 5;
-    zonesOfImage(invalidRegion) = 10;
+    zonesOfImage(logical(invalidRegion)) = 10;
     zonesOfImage(plaqueDetection>0) = 8;
     c=jet(10);
     c(5,:)=[230,255,242]/255;
