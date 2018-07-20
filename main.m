@@ -27,5 +27,5 @@ for numFile = indicesFiles(1:end)'
     count=count+1;
 end
 
-tableResults=cell2table([nameFolder,nSample,densityInRedZone,densityInNoRedZone],'VariableNames',{'folder','numberOfSample','neuronsDensityRedZone','neuronsDensityNoRedZone'});
+tableResults=cell2table([nameFolder,nSample,densityInRedZone,densityInNoRedZone],'VariableNames',{'folder','numberOfSample','neuronsDensityInDamage','neuronsDensityInNoDamage'});
 warning('on')

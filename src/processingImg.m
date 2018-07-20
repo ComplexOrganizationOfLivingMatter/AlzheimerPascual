@@ -100,8 +100,8 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
         %Outside of the red zone
         densityInNoRedZone = length(zonesOfImage(neuronsIndices) == 5)/(outsideRedZoneAreaInMicrons);
     else
-        densityInRedZone = length(zonesOfImage(neuronsIndices) > 0) / (redZoneAreaInMicrons + outsideRedZoneAreaInMicrons);
-        densityInNoRedZone = 0;
+        densityInNoRedZone = length(zonesOfImage(neuronsIndices) > 0) / (redZoneAreaInMicrons + outsideRedZoneAreaInMicrons);
+        densityInRedZone = 0;
     end
 
     
