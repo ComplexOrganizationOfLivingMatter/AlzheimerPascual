@@ -10,7 +10,7 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
     pixelWidthInMicrons = 0.3031224;
     minObjectSizeInPixels2Delete= round(pi*(7.5^2));
     
-    numChannels = 4;
+    numChannels = 5;
     radiusOverlapping = 1.3;
     
     pixelsOfSurroundingZone = 20;
@@ -23,17 +23,40 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
     mkdir(outputDir);
 
     %% Reading Raw images
-        %% Getting the three necessary channels
+    % Getting the three necessary channels
     B=imread(pathFile);
     G=imread(strrep(pathFile,'C=0','C=1'));
     R=imread(strrep(pathFile,'C=0','C=2'));
     for nChan=1:numChannels
-        imchan=imread(strrep(pathFile,'C=0',['C=' num2str(nChan)-1]));
-        grayImages(:,:,nChan)=imchan(:,:,1)+imchan(:,:,2)+imchan(:,:,3);
-        %to visualize image:
-        %figure;imshow(double(mat2gray(grayImages(:,:,nChan),[0,255])))
+        try
+            imchan=imread(strrep(pathFile,'C=0',['C=' num2str(nChan)-1]));
+            grayImages(:,:,nChan)=imchan(:,:,1)+imchan(:,:,2)+imchan(:,:,3);
+            %to visualize image:
+            %figure;imshow(double(mat2gray(grayImages(:,:,nChan),[0,255])))
+        catch
+            if numChannels == 5
+                disp('No invalid zone');
+            else
+                disp('Unexpected error while reading channels');
+            end
+        end
     end
     ImgComposite=R+G+B;
+    
+    %% Getting invalid region
+    if length(grayImages) == 5
+        invalidRegion = grayImages(:, :, 5);
+        invalidRegion = invalidRegion>0;
+        invalidRegionAreaInMicrons = sum(invalidRegion(:)) * pixelWidthInMicrons^2;
+        for numChannel = 1:numChannels-1
+            actualChannel = grayImages(:, :, numChannel);
+            actualChannel(invalidRegion) = 0;
+            grayImages(:, :, actualChannel) = actualChannel;
+        end
+    else
+        invalidRegion = zeros(size(grayImages(:, :, 5)));
+        invalidRegionAreaInMicrons = 0;
+    end
     
     %% Segment red zone
     [finalRedZone,redZoneAreaInMicrons,outsideRedZoneAreaInMicrons,plaqueDetection] = segmentDamageRedZone(grayImages,minRedAreaPixels,pixelsOfSurroundingZone,pixelWidthInMicrons, outputDir);
@@ -46,14 +69,15 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
     
     %% Get neuron+nucleus that were not assigned in the circular shape recognition
     [finalCentroidCircles,finalRadiusCircles] = reassigningNotRecognizedNucleiNeurons(finalNuclei,finalNeurons,nucleiRadiusRangeInPixels,finalCentroidCircles,finalRadiusCircles,outputDir);
-
-    %Final Representation
+    
+    %% Final Representation
     zonesOfImage = ones(size(finalRedZone));
     zonesOfImage(finalRedZone == 0) = 5;
+    zonesOfImage(invalidRegion) = 10;
     zonesOfImage(plaqueDetection>0) = 8;
     c=jet(10);
     c(5,:)=[230,255,242]/255;
-    figure('Visible', 'on');
+    figure('Visible', 'off');
     imshow(zonesOfImage, c)
     hold on;
     mask2Show=ImgComposite(:,:,3);
@@ -68,6 +92,8 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
 
     print(strcat(outputDir, '/compositePerZonesWithNeurons.tif'), '-dtiff');
     
+    
+    outsideRedZoneAreaInMicrons = outsideRedZoneAreaInMicrons - invalidRegionAreaInMicrons;
     if contains(lower(pathFile), 'wt') == 0
         %figure; imshow(ismember(labelledNeurons, neuronsInRedZone).*labelledNeurons, colorcube(200))
         densityInRedZone = sum(zonesOfImage(neuronsIndices) == 1)/redZoneAreaInMicrons;
