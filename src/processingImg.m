@@ -34,11 +34,6 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
             %to visualize image:
             %figure;imshow(double(mat2gray(grayImages(:,:,nChan),[0,255])))
         catch
-            if numChannels == 5
-                disp('No invalid zone');
-            else
-                disp('Unexpected error while reading channels');
-            end
         end
     end
     ImgComposite=R+G+B;
@@ -72,9 +67,11 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
     
     %% Final Representation
     zonesOfImage = ones(size(finalRedZone));
-    zonesOfImage(finalRedZone == 0) = 5;
+    if contains(lower(pathFile), 'wt') == 0
+        zonesOfImage(finalRedZone == 0) = 5;
+        zonesOfImage(plaqueDetection>0) = 8;
+    end
     zonesOfImage(logical(invalidRegion)) = 10;
-    zonesOfImage(plaqueDetection>0) = 8;
     c=jet(10);
     c(5,:)=[230,255,242]/255;
     figure('Visible', 'off');
