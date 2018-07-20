@@ -1,4 +1,4 @@
-function [densityInRedZone, densityInNoRedZone] = refactoredProcessingImg(pathFile)
+function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
 %%PROCESSINGIMG 
 % Channel 1: Nuclei (Blue)
 % Channel 2: Neurons (Green)
@@ -51,9 +51,15 @@ function [densityInRedZone, densityInNoRedZone] = refactoredProcessingImg(pathFi
     zonesOfImage = ones(size(finalRedZone));
     zonesOfImage(finalRedZone == 0) = 5;
     zonesOfImage(plaqueDetection>0) = 8;
-    figure('Visible', 'off');
-    imshow(zonesOfImage, jet(10))
-    hold on;imshow(ImgComposite);hold off
+    c=jet(10);
+    c(5,:)=[230,255,242]/255;
+    figure('Visible', 'on');
+    imshow(zonesOfImage, c)
+    hold on;
+    mask2Show=ImgComposite(:,:,3);
+    mask2Show(plaqueDetection>0)=0;
+    imshow(cat(3,ImgComposite(:,:,1:2),mask2Show));
+    hold off
     alpha(.7)
     print(strcat(outputDir, '/compositePerZones.tif'), '-dtiff');
     
