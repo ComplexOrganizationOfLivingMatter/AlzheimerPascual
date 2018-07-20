@@ -28,4 +28,5 @@ for numFile = indicesFiles(1:end)'
 end
 
 tableResults=cell2table([nameFolder,nSample,densityInRedZone,densityInNoRedZone],'VariableNames',{'folder','numberOfSample','neuronsDensityInDamage','neuronsDensityInNoDamage'});
+writetable(tableResults, strcat('results/densityNeuronsPerRegion_', date, '.xlsx'))
 warning('on')
