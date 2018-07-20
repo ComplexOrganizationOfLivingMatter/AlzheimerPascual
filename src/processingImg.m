@@ -36,7 +36,7 @@ function [densityInRedZone, densityInNoRedZone] = refactoredProcessingImg(pathFi
     ImgComposite=R+G+B;
     
     %% Segment red zone
-    [finalRedZone,redZoneAreaInMicrons,outsideRedZoneAreaInMicrons] = segmentDamageRedZone(grayImages,minRedAreaPixels,pixelsOfSurroundingZone,pixelWidthInMicrons, outputDir);
+    [finalRedZone,redZoneAreaInMicrons,outsideRedZoneAreaInMicrons,plaqueDetection] = segmentDamageRedZone(grayImages,minRedAreaPixels,pixelsOfSurroundingZone,pixelWidthInMicrons, outputDir);
     
     %% Segment neurons and nuclei
     [finalNeurons,finalNuclei,nucleiWithNeuron] = segmentNeuronsAndNuclei(grayImages,minObjectSizeInPixels2Delete,outputDir);
@@ -49,9 +49,10 @@ function [densityInRedZone, densityInNoRedZone] = refactoredProcessingImg(pathFi
 
     %Final Representation
     zonesOfImage = ones(size(finalRedZone));
-    zonesOfImage(finalRedZone == 0) = 2;
+    zonesOfImage(finalRedZone == 0) = 5;
+    zonesOfImage(plaqueDetection>0) = 8;
     figure('Visible', 'off');
-    imshow(zonesOfImage,colorcube(2))
+    imshow(zonesOfImage, jet(10))
     hold on;imshow(ImgComposite);hold off
     alpha(.7)
     print(strcat(outputDir, '/compositePerZones.tif'), '-dtiff');

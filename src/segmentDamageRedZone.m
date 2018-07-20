@@ -1,7 +1,7 @@
-function [finalRedZone,redZoneAreaInMicrons,outsideRedZoneAreaInMicrons] = segmentDamageRedZone(grayImages,minRedAreaPixels,pixelsOfSurroundingZone,pixelWidthInMicrons, outputDir)
+function [finalRedZone,redZoneAreaInMicrons,outsideRedZoneAreaInMicrons,plaqueDetection] = segmentDamageRedZone(grayImages,minRedAreaPixels,pixelsOfSurroundingZone,pixelWidthInMicrons, outputDir)
 
     %% Damage zone (Channel 3)
-    redZone = imbinarize(adapthisteq(grayImages(:,:,3)));
+    redZone = imbinarize(grayImages(:,:,3));
     redZoneFilled = imfill(redZone, 'holes');
     areaRedZone=regionprops(redZoneFilled,'Area');
     redZoneFilledLabelled= bwlabel(redZoneFilled);
