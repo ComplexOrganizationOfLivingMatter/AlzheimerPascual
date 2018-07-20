@@ -89,14 +89,16 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
 
     print(strcat(outputDir, '/compositePerZonesWithNeurons.tif'), '-dtiff');
     
+    %% Get density neurons per zone
     
-    outsideRedZoneAreaInMicrons = outsideRedZoneAreaInMicrons - invalidRegionAreaInMicrons;
+    plaquesAreaInMicrons=sum(plaqueDetection(:)) * pixelWidthInMicrons^2;
+    outsideRedZoneAreaInMicrons = outsideRedZoneAreaInMicrons - invalidRegionAreaInMicrons - plaquesAreaInMicrons;
     if contains(lower(pathFile), 'wt') == 0
         %figure; imshow(ismember(labelledNeurons, neuronsInRedZone).*labelledNeurons, colorcube(200))
         densityInRedZone = sum(zonesOfImage(neuronsIndices) == 1)/redZoneAreaInMicrons;
 
         %Outside of the red zone
-        densityInNoRedZone = length(zonesOfImage(neuronsIndices) == 3)/outsideRedZoneAreaInMicrons;
+        densityInNoRedZone = length(zonesOfImage(neuronsIndices) == 5)/(outsideRedZoneAreaInMicrons);
     else
         densityInRedZone = length(zonesOfImage(neuronsIndices) > 0) / (redZoneAreaInMicrons + outsideRedZoneAreaInMicrons);
         densityInNoRedZone = 0;
