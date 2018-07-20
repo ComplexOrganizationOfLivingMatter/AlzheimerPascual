@@ -1,4 +1,4 @@
-function [finalRedZone,redZoneAreaInMicrons,outsideRedZoneAreaInMicrons,plaqueDetection] = segmentDamageRedZone(grayImages,minRedAreaPixels,pixelsOfSurroundingZone,pixelWidthInMicrons, outputDir)
+function [finalRedZone,redZoneAreaInMicrons,outsideRedZoneAreaInMicrons,plaqueDetection] = segmentDamageRedZone(grayImages,minRedAreaPixels,pixelWidthInMicrons, outputDir)
 
     %% Damage zone (Channel 3)
     redZone = imbinarize(grayImages(:,:,3));

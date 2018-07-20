@@ -6,15 +6,13 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
 % Channel 4: Perfusion (White)
 
     %% Initial variables
-    minRedAreaPixels=8000;
+    minRedAreaPixels=6000;
     pixelWidthInMicrons = 0.3031224;
     minObjectSizeInPixels2Delete= round(pi*(7.5^2));
     
     numChannels = 5;
     radiusOverlapping = 1.3;
-    
-    pixelsOfSurroundingZone = 20;
-    
+     
     nucleiRadiusRangeInMicrons = [5, 12];
     nucleiRadiusRangeInPixels = round(nucleiRadiusRangeInMicrons ./ pixelWidthInMicrons);
     
@@ -54,7 +52,7 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
     end
     
     %% Segment red zone
-    [finalRedZone,redZoneAreaInMicrons,outsideRedZoneAreaInMicrons,plaqueDetection] = segmentDamageRedZone(grayImages,minRedAreaPixels,pixelsOfSurroundingZone,pixelWidthInMicrons, outputDir);
+    [finalRedZone,redZoneAreaInMicrons,outsideRedZoneAreaInMicrons,plaqueDetection] = segmentDamageRedZone(grayImages,minRedAreaPixels,pixelWidthInMicrons, outputDir);
     
     %% Segment neurons and nuclei
     [finalNeurons,finalNuclei,nucleiWithNeuron] = segmentNeuronsAndNuclei(grayImages,minObjectSizeInPixels2Delete,outputDir);
