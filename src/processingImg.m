@@ -1,4 +1,4 @@
-function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
+function [densityInRedZone, densityInNoRedZone, densityInPeripheryOfRedZone,densityOuterPeripheryAnomaly,ratioPlaquesDamage] = processingImg(pathFile)
 %%PROCESSINGIMG 
 % Channel 1: Nuclei (Blue)
 % Channel 2: Neurons (Green)
@@ -12,6 +12,9 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
     
     numChannels = 5;
     radiusOverlapping = 1.3;
+    
+    radiusInMicronsPeripheryAnomaly=50;
+    radiusInPixelsPeripheryAnomaly=radiusInMicronsPeripheryAnomaly/pixelWidthInMicrons;
      
     nucleiRadiusRangeInMicrons = [5, 12];
     nucleiRadiusRangeInPixels = round(nucleiRadiusRangeInMicrons ./ pixelWidthInMicrons);
@@ -51,11 +54,10 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
         invalidRegionAreaInMicrons = 0;
     end
     
-    %% Segment red zone
-    [finalRedZone,redZoneAreaInMicrons,outsideRedZoneAreaInMicrons,plaqueDetection] = segmentDamageRedZone(grayImages,minRedAreaPixels,pixelWidthInMicrons, outputDir);
-    
     %% Segment neurons and nuclei
     [finalNeurons,finalNuclei,nucleiWithNeuron] = segmentNeuronsAndNuclei(grayImages,minObjectSizeInPixels2Delete,outputDir);
+    %% Segment red zone
+    [finalRedZone,redZoneAreaInMicrons,outsideRedZoneAreaInMicrons,plaqueDetection,peripheryOfAnomaly] = segmentDamageRedZone(grayImages,minRedAreaPixels,pixelWidthInMicrons,radiusInPixelsPeripheryAnomaly,finalNuclei,outputDir);
 
     %% Get intersection of neurons with nuclei
     [finalCentroidCircles, finalRadiusCircles] = intersectionNucleiNeuronsRecognition(outputDir, grayImages, nucleiWithNeuron,finalNeurons,ImgComposite,nucleiRadiusRangeInPixels,radiusOverlapping);
@@ -68,6 +70,7 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
     if contains(lower(pathFile), 'wt') == 0
         zonesOfImage(finalRedZone == 0) = 5;
         zonesOfImage(plaqueDetection>0) = 8;
+        zonesOfImage(peripheryOfAnomaly>0) = 4;
     end
     zonesOfImage(logical(invalidRegion)) = 10;
     c=jet(10);
@@ -89,17 +92,26 @@ function [densityInRedZone, densityInNoRedZone] = processingImg(pathFile)
     
     %% Get density neurons per zone
     
-    plaquesAreaInMicrons=sum(plaqueDetection(:)) * pixelWidthInMicrons^2;
+    plaquesAreaInMicrons = sum(plaqueDetection(:)) * pixelWidthInMicrons^2;
+    peripheryOfRedZoneInMicrons = sum(peripheryOfAnomaly(:)) * pixelWidthInMicrons^2;
     outsideRedZoneAreaInMicrons = outsideRedZoneAreaInMicrons - invalidRegionAreaInMicrons - plaquesAreaInMicrons;
     if contains(lower(pathFile), 'wt') == 0
         %figure; imshow(ismember(labelledNeurons, neuronsInRedZone).*labelledNeurons, colorcube(200))
         densityInRedZone = sum(zonesOfImage(neuronsIndices) == 1)/redZoneAreaInMicrons;
 
         %Outside of the red zone
-        densityInNoRedZone = length(zonesOfImage(neuronsIndices) == 5)/(outsideRedZoneAreaInMicrons);
+        densityInPeripheryOfRedZone = length(zonesOfImage(neuronsIndices) == 4)/(peripheryOfRedZoneInMicrons);
+        densityInNoRedZone = (length(zonesOfImage(neuronsIndices) == 5) + length(zonesOfImage(neuronsIndices) == 4)) /(outsideRedZoneAreaInMicrons);
+        densityOuterPeripheryAnomaly=length(zonesOfImage(neuronsIndices) == 5)/(outsideRedZoneAreaInMicrons-peripheryOfRedZoneInMicrons);
+        
+        %ratio area of plaques and damage
+        ratioPlaquesDamage=sum(plaqueDetection(:))/sum(finalRedZone(:));
     else
         densityInNoRedZone = length(zonesOfImage(neuronsIndices) > 0) / (redZoneAreaInMicrons + outsideRedZoneAreaInMicrons);
         densityInRedZone = 0;
+        densityInPeripheryOfRedZone=0;
+        densityOuterPeripheryAnomaly=0;
+        ratioPlaquesDamage=0;
     end
 
     
