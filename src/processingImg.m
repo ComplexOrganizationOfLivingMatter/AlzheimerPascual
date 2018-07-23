@@ -56,8 +56,9 @@ function [densityInRedZone, densityInNoRedZone, densityInPeripheryOfRedZone,dens
     
     %% Segment neurons and nuclei
     [finalNeurons,finalNuclei,nucleiWithNeuron] = segmentNeuronsAndNuclei(grayImages,minObjectSizeInPixels2Delete,outputDir);
+    
     %% Segment red zone
-    [finalRedZone,redZoneAreaInMicrons,outsideRedZoneAreaInMicrons,plaqueDetection,peripheryOfAnomaly] = segmentDamageRedZone(grayImages,minRedAreaPixels,pixelWidthInMicrons,radiusInPixelsPeripheryAnomaly,finalNuclei,outputDir);
+    [finalRedZone,redZoneAreaInMicrons,outsideRedZoneAreaInMicrons,plaqueDetection,peripheryOfAnomaly] = segmentDamageRedZone(grayImages,minRedAreaPixels,pixelWidthInMicrons,radiusInPixelsPeripheryAnomaly,outputDir);
 
     %% Get intersection of neurons with nuclei
     [finalCentroidCircles, finalRadiusCircles] = intersectionNucleiNeuronsRecognition(outputDir, grayImages, nucleiWithNeuron,finalNeurons,ImgComposite,nucleiRadiusRangeInPixels,radiusOverlapping);
