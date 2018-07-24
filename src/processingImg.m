@@ -7,7 +7,7 @@ function [densityInRedZone, densityInNoRedZone, densityInPeripheryOfRedZone,dens
 
     %% Initial variables
     minRedAreaPixels=6000;
-    pixelWidthInMicrons = 0.3031224;
+    pixelWidthInMicrons = 0.3031224; %1024 pixels -> 310.40 microns. 1 pixel -> ~0.3 microns
     minObjectSizeInPixels2Delete= round(pi*(7.5^2));
     
     numChannels = 5;
@@ -101,14 +101,14 @@ function [densityInRedZone, densityInNoRedZone, densityInPeripheryOfRedZone,dens
         densityInRedZone = sum(zonesOfImage(neuronsIndices) == 1)/redZoneAreaInMicrons;
 
         %Outside of the red zone
-        densityInPeripheryOfRedZone = length(zonesOfImage(neuronsIndices) == 4)/(peripheryOfRedZoneInMicrons);
-        densityInNoRedZone = (length(zonesOfImage(neuronsIndices) == 5) + length(zonesOfImage(neuronsIndices) == 4)) /(outsideRedZoneAreaInMicrons);
-        densityOuterPeripheryAnomaly=length(zonesOfImage(neuronsIndices) == 5)/(outsideRedZoneAreaInMicrons-peripheryOfRedZoneInMicrons);
+        densityInPeripheryOfRedZone = sum(zonesOfImage(neuronsIndices) == 4)/(peripheryOfRedZoneInMicrons);
+        densityInNoRedZone = (sum(zonesOfImage(neuronsIndices) == 5) + sum(zonesOfImage(neuronsIndices) == 4)) /(outsideRedZoneAreaInMicrons);
+        densityOuterPeripheryAnomaly=sum(zonesOfImage(neuronsIndices) == 5)/(outsideRedZoneAreaInMicrons-peripheryOfRedZoneInMicrons);
         
         %ratio area of plaques and damage
         ratioPlaquesDamage=sum(plaqueDetection(:))/sum(finalRedZone(:));
     else
-        densityInNoRedZone = length(zonesOfImage(neuronsIndices) > 0) / (redZoneAreaInMicrons + outsideRedZoneAreaInMicrons);
+        densityInNoRedZone = sum(zonesOfImage(neuronsIndices) > 0) / (redZoneAreaInMicrons + outsideRedZoneAreaInMicrons);
         densityInRedZone = 0;
         densityInPeripheryOfRedZone=0;
         densityOuterPeripheryAnomaly=0;
