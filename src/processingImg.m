@@ -98,12 +98,11 @@ function [densityInRedZone, densityInNoRedZone, densityInPeripheryOfRedZone,dens
     print(strcat(outputDir, '/compositePerZonesWithNeurons.tif'), '-dtiff');
     
     %% Get density neurons per zone
-    
     plaquesAreaInMicrons = sum(plaqueDetection(:)) * pixelWidthInMicrons^2;
     peripheryOfRedZoneInMicrons = sum(peripheryOfAnomaly(:)) * pixelWidthInMicrons^2;
     outsideRedZoneAreaInMicrons = outsideRedZoneAreaInMicrons - invalidRegionAreaInMicrons - plaquesAreaInMicrons;
+    % If the image belongs to WT, it does not have red damage
     if contains(lower(pathFile), 'wt') == 0
-        %figure; imshow(ismember(labelledNeurons, neuronsInRedZone).*labelledNeurons, colorcube(200))
         densityInRedZone = sum(zonesOfImage(neuronsIndices) == 1)/redZoneAreaInMicrons;
 
         %Outside of the red zone
@@ -114,6 +113,7 @@ function [densityInRedZone, densityInNoRedZone, densityInPeripheryOfRedZone,dens
         %ratio area of plaques and damage
         ratioPlaquesDamage=sum(plaqueDetection(:))/sum(finalRedZone(:));
     else
+        %The image neurons density
         densityInNoRedZone = sum(zonesOfImage(neuronsIndices) > 0) / (redZoneAreaInMicrons + outsideRedZoneAreaInMicrons);
         densityInRedZone = 0;
         densityInPeripheryOfRedZone=0;
@@ -121,6 +121,5 @@ function [densityInRedZone, densityInNoRedZone, densityInPeripheryOfRedZone,dens
         ratioPlaquesDamage=0;
     end
 
-    
     close all
 end
