@@ -7,15 +7,21 @@ function [densityInRedZone, densityInNoRedZone, densityInPeripheryOfRedZone,dens
 
     %% Initial variables
     minRedAreaPixels=6000;
-    pixelWidthInMicrons = 0.3031224; %1024 pixels -> 310.40 microns. 1 pixel -> ~0.3 microns
+    %1024 pixels -> 310.40 microns. 1 pixel -> ~0.3 microns
+    pixelWidthInMicrons = 0.3031224;
+    %Minimum size of the objects to delete in pixels
     minObjectSizeInPixels2Delete= round(pi*(7.5^2));
     
+    %Number of channels
     numChannels = 5;
+    %To remove overlapping circular neurons
     radiusOverlapping = 1.3;
     
+    %Periphery variables
     radiusInMicronsPeripheryAnomaly=50;
     radiusInPixelsPeripheryAnomaly=radiusInMicronsPeripheryAnomaly/pixelWidthInMicrons;
      
+    %The radius for the function imfindcircles
     nucleiRadiusRangeInMicrons = [5, 12];
     nucleiRadiusRangeInPixels = round(nucleiRadiusRangeInMicrons ./ pixelWidthInMicrons);
     
