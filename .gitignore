@@ -32,3 +32,5 @@ octave-workspace
 *.tif
 *.zip
 *.xlsx
+*.tmp
+*.docx
