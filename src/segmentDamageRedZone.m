@@ -11,7 +11,13 @@ function [finalRedZone,redZoneAreaInMicrons,outsideRedZoneAreaInMicrons,plaqueDe
     areaRedZone=regionprops(redZoneFilled,'Area');
     redZoneFilledLabelled= bwlabel(redZoneFilled);
     finalRedZone=ismember(redZoneFilledLabelled,find(cat(1,areaRedZone.Area)>minRedAreaPixels));
+    finalRedZone=imdilate(finalRedZone,strel('disk',30));
+    finalRedZone = imfill(finalRedZone, 'holes');
+    finalRedZone=imerode(finalRedZone,strel('disk',30));
+
     finalRedZoneLabel=bwlabel(finalRedZone);
+    
+    
     
     %Get a red zone more or less convex (similar to convex hull), to avoid
     %strange holes
