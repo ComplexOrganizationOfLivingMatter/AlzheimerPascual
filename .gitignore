@@ -34,3 +34,5 @@ octave-workspace
 *.xlsx
 *.tmp
 *.docx
+*.xml
+*.xls
