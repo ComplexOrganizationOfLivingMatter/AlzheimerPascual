@@ -2,7 +2,7 @@
 
 pathFolders = dir('**/*.xls');
 
-for nFolder = 1 : size(pathFolders,1)
+for nFolder = 3 : size(pathFolders,1)
     
     T = readtable([pathFolders(nFolder).folder '\' pathFolders(nFolder).name],'Sheet','Quantities - Raw');
     pathRois = dir([pathFolders(nFolder).folder '\*.csv']);
@@ -12,10 +12,12 @@ for nFolder = 1 : size(pathFolders,1)
     majorROI = namesROIs(cellfun(@(x) contains(lower(x),'major'),namesROIs));
 
     tableMajorROI = readtable([pathFolders(nFolder).folder '\' majorROI{1}]);
+    ROIpolyCoord = [tableMajorROI.X,tableMajorROI.Y];
+    ROIpolyCoordPixels = [[ROIpolyCoord(:,1);ROIpolyCoord(1,1)]*resolution,[ROIpolyCoord(:,2);ROIpolyCoord(1,2)]*resolution];
 
     tablesInvalidROI = cell(length(invalidROIs),1);
     for nInvROIs = 1:length(invalidROIs)
-       tablesInvalidROI{nInvROIs} = readtable([pathFolders(nFolder).folder '\' majorROI{1}]);
+       tablesInvalidROI{nInvROIs} = readtable([pathFolders(nFolder).folder '\' invalidROIs{nInvROIs}]);
     end
     
     imgInfo = imfinfo([pathFolders(nFolder).folder '\Image.tif']);
@@ -68,8 +70,25 @@ for nFolder = 1 : size(pathFolders,1)
     end
    
     
-    h = figure;imshow(flipud(rgb2gray(img)))
+
     
+    %% paint mask roi delete no valid regions
+    maskROIpoly = false(size(rgb2gray(img)));
+    [allX,allY]=find(maskROIpoly==0);
+    inRoi = inpolygon(allY,allX,ROIpolyCoordPixels(:,1),ROIpolyCoordPixels(:,2));
+    maskROIpoly(inRoi)=1;
+    for nNoValidRois = 1 : length(tablesInvalidROI)
+        tableAux = tablesInvalidROI{nNoValidRois};
+        ROIpolyCoordAux = [tableAux.X,tableAux.Y];
+        ROIpolyCoordPixelsAux = [[ROIpolyCoordAux(:,1);ROIpolyCoordAux(1,1)]*resolution,[ROIpolyCoordAux(:,2);ROIpolyCoordAux(1,2)]*resolution];
+        inRoi = inpolygon(allY,allX,ROIpolyCoordPixelsAux(:,1),ROIpolyCoordPixelsAux(:,2));
+        maskROIpoly(inRoi) = 0;
+    end
+    figure;imshow(maskROIpoly);
+        
+
+    %     h = figure;imshow(flipud(rgb2gray(img)))
+    h = figure;imshow(rgb2gray(img))
     hold on,plot(coordMark2Pixels(:,1)+setupX,coordMark2Pixels(:,2)+setupY,'.b','MarkerSize',3)
     hold on,plot(coordMark1Pixels(:,1)+setupX,coordMark1Pixels(:,2)+setupY,'.r','MarkerSize',3)
     hold on,plot(coordMark3Pixels(:,1)+setupX,coordMark3Pixels(:,2)+setupY,'*y')
