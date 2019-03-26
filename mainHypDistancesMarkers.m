@@ -29,51 +29,51 @@ for nFolder = 1 : size(pathFolders,1)
     
     %% Read matched Markers & images from Maribel
     
+    
+    
+    
+    
     %% Define ROI (and invalid ROI)
+    if ~exist([pathFolders(nFolder).folder '\validROI.tiff'],'file')
+        invalidROIs = namesROIs(cellfun(@(x) contains(lower(x),'invalid'),namesROIs));
+
+        tablesInvalidROI = cell(length(invalidROIs),1);
+        for nInvROIs = 1:length(invalidROIs)
+           tablesInvalidROI{nInvROIs} = readtable([pathFolders(nFolder).folder '\' invalidROIs{nInvROIs}]);
+        end
+
+        ROIpolyCoord = [tableMajorROI.X,tableMajorROI.Y];
+        ROIpolyCoordPixels = [[ROIpolyCoord(:,1);ROIpolyCoord(1,1)]*resolution,[ROIpolyCoord(:,2);ROIpolyCoord(1,2)]*resolution];
+
+        maskROIpoly = false(size(rgb2gray(img)));
+        [allX,allY]=find(maskROIpoly==0);
+        inRoi = inpolygon(allY,allX,ROIpolyCoordPixels(:,1),ROIpolyCoordPixels(:,2));
+        maskROIpoly(inRoi)=1;
+        for nNoValidRois = 1 : length(tablesInvalidROI)
+            tableAux = tablesInvalidROI{nNoValidRois};
+            ROIpolyCoordAux = [tableAux.X,tableAux.Y];
+            ROIpolyCoordPixelsAux = [[ROIpolyCoordAux(:,1);ROIpolyCoordAux(1,1)]*resolution,[ROIpolyCoordAux(:,2);ROIpolyCoordAux(1,2)]*resolution];
+            inRoi = inpolygon(allY,allX,ROIpolyCoordPixelsAux(:,1),ROIpolyCoordPixelsAux(:,2));
+            maskROIpoly(inRoi) = 0;
+        end
+        imwrite(maskROIpoly,[pathFolders(nFolder).folder '\validROI.tiff']) 
+    else
+%         maskROIpoly = imread([pathFolders(nFolder).folder '\markers.tiff']);
+    end
     
     
+
     
-%     h = figure('units','normalized','outerposition',[0 0 1 1],'Visible','on');   
-%     imshow(flipud(rgb2gray(img)));
-%     h = figure;imshow(rgb2gray(img))
-%     hold on,plot(coordMark2Pixels(:,1)+setupX,coordMark2Pixels(:,2)+setupY,'.b','MarkerSize',3)
-%     hold on,plot(coordMark1Pixels(:,1)+setupX,coordMark1Pixels(:,2)+setupY,'.r','MarkerSize',3)
-%     hold on,plot(coordMark3Pixels(:,1)+setupX,coordMark3Pixels(:,2)+setupY,'*y')
-%     truesize(h,[size(rgb2gray(img),1),size(rgb2gray(img),2)])
-%     print(h,[pathFolders(nFolder).folder '\markers'],'-dtiff','-r600')
-%     %% paint mask roi delete no valid regions
-%     invalidROIs = namesROIs(cellfun(@(x) contains(lower(x),'invalid'),namesROIs));
+%     %command to calculate distances defining nan zones: bwdistegeodsic
 %     
-%     tablesInvalidROI = cell(length(invalidROIs),1);
-%     for nInvROIs = 1:length(invalidROIs)
-%        tablesInvalidROI{nInvROIs} = readtable([pathFolders(nFolder).folder '\' invalidROIs{nInvROIs}]);
-%     end
+%     for nCoord = 1 : length(coord)
 %     
-%     ROIpolyCoord = [tableMajorROI.X,tableMajorROI.Y];
-%     ROIpolyCoordPixels = [[ROIpolyCoord(:,1);ROIpolyCoord(1,1)]*resolution,[ROIpolyCoord(:,2);ROIpolyCoord(1,2)]*resolution];
-%     
-%     maskROIpoly = false(size(rgb2gray(img)));
-%     [allX,allY]=find(maskROIpoly==0);
-%     inRoi = inpolygon(allY,allX,ROIpolyCoordPixels(:,1),ROIpolyCoordPixels(:,2));
-%     maskROIpoly(inRoi)=1;
-%     for nNoValidRois = 1 : length(tablesInvalidROI)
-%         tableAux = tablesInvalidROI{nNoValidRois};
-%         ROIpolyCoordAux = [tableAux.X,tableAux.Y];
-%         ROIpolyCoordPixelsAux = [[ROIpolyCoordAux(:,1);ROIpolyCoordAux(1,1)]*resolution,[ROIpolyCoordAux(:,2);ROIpolyCoordAux(1,2)]*resolution];
-%         inRoi = inpolygon(allY,allX,ROIpolyCoordPixelsAux(:,1),ROIpolyCoordPixelsAux(:,2));
-%         maskROIpoly(inRoi) = 0;
-%     end
-%     figure;imshow(maskROIpoly);
+%         indCoord = sub2ind(maskROIpoly,coord(:,1),coord(:,2));
 %         
-% 
+%         D = bwdistgeodesic(maskROIpoly,indCoord); 
 %     
-% %     hold on,plot(centroidXYPosPixels(:,1)+setupX,centroidXYPosPixels(:,2)+setupY,'ok')
-%     axis xy
-%     axis equal
-% 
-%     
-%     %command to calculate distances defining nan zones: bwdistgeodesic
-%     
+%     end
+
 %     minDistFromMark1to2 = arrayfun(@(x,y) min(pdist2([x,y],coordMark2)),coordMark1(:,1),coordMark1(:,2));
 %     averageMinDFrom1to2 = mean(minDistFromMark1to2);
 %     stdMinDFrom1to2 = std(minDistFromMark1to2);   
@@ -93,5 +93,5 @@ for nFolder = 1 : size(pathFolders,1)
 %     
 %     %randomize markers 1 position fixing the marker 2
 
-    
+    clearvars -except pathFolders nFolder
 end
