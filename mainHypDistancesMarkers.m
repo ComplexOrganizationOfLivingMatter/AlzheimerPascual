@@ -28,8 +28,14 @@ for nFolder = 1 : size(pathFolders,1)
     end
     
     %% Read matched Markers & images from Maribel
-    
-    
+    fileName = pathFolders(nFolder).folder;
+    imgMovMarkers = imread([pathFolders(nFolder).folder '\markersMovedFinal_Hyp' fileName(end-2:end) '.tif']);
+    redMarkers = imgMovMarkers(:,:,1)>0;
+    [row1,col1] = find(redMarkers);
+    coordMark1 = [row1,col1];
+    blueMarkers = imgMovMarkers(:,:,3)>0;
+    [row2,col2] = find(blueMarkers);
+    coordMark2 = [row2,col2];
     
     
     
@@ -58,40 +64,76 @@ for nFolder = 1 : size(pathFolders,1)
         end
         imwrite(maskROIpoly,[pathFolders(nFolder).folder '\validROI.tiff']) 
     else
-%         maskROIpoly = imread([pathFolders(nFolder).folder '\markers.tiff']);
+        maskROIpoly = imread([pathFolders(nFolder).folder '\validROI.tiff']);
+        maskROIpoly = imbinarize(rgb2gray(maskROIpoly));
     end
     
     
 
     
-%     %command to calculate distances defining nan zones: bwdistegeodsic
-%     
-%     for nCoord = 1 : length(coord)
-%     
-%         indCoord = sub2ind(maskROIpoly,coord(:,1),coord(:,2));
-%         
-%         D = bwdistgeodesic(maskROIpoly,indCoord); 
-%     
-%     end
+    %delete markers out from the valid mask
+    idCoord1 = sub2ind(size(maskROIpoly),coordMark1(:,1),coordMark1(:,2));
+    coordMark1(maskROIpoly(idCoord1)==0,:) = [];
+    idCoord2 = sub2ind(size(maskROIpoly),coordMark2(:,1),coordMark2(:,2));
+    coordMark2(maskROIpoly(idCoord2)==0,:) = [];
+%     figure;imshow(maskROIpoly);hold on
+%     plot(coordMark1(:,2),coordMark1(:,1),'.r')
+%     plot(coordMark2(:,2),coordMark2(:,1),'.b')
+    
 
-%     minDistFromMark1to2 = arrayfun(@(x,y) min(pdist2([x,y],coordMark2)),coordMark1(:,1),coordMark1(:,2));
-%     averageMinDFrom1to2 = mean(minDistFromMark1to2);
-%     stdMinDFrom1to2 = std(minDistFromMark1to2);   
-%     
-%     minDistFromMark2to1 = arrayfun(@(x,y) min(pdist2([x,y],coordMark1)),coordMark2(:,1),coordMark2(:,2));
-%     averageMinDFrom2to1 = mean(minDistFromMark2to1);
-%     stdMinDFrom2to1 = std(minDistFromMark2to1);
-%     
-%     %meter tambien distancias minimas entre marcadores del mismo tipo
-%     
-%     %%%
-%     
-%     numMark1 = size(coordMark1,1);
-%     numMark2 = size(coordMark2,1);
-%     
-%     %randomize markers 2 position fixing the marker 1
-%     
-%     %randomize markers 1 position fixing the marker 2
+    %% calculate geodesic distances in raw images
+    path2save1 = [pathFolders(nFolder).folder,'\markerDistancesRaw.mat'];
+    if exist(path2save1,'file')
+        load(path2save1)
+    else
+        [cellDistances1_1_raw,cellDistances1_2_raw,cellDistances2_1_raw,cellDistances2_2_raw] = measureGeodesicDistances(coordMark1,coordMark2,maskROIpoly,'shit');
+        save(path2save1,'cellDistances1_1_raw','cellDistances1_2_raw','cellDistances2_1_raw','cellDistances2_2_raw')
+    end
+    
+    %% make randomization for the marker 1 (integrin), with the marker 2 fixed
+    posibleInd = find(maskROIpoly(:)>0);
+    totalRandom = 100;
+    cellDistances1_1_rand = cell(1, totalRandom);
+    cellDistances1_2_rand = cell(1, totalRandom);
+    cellDistances2_1_rand = cell(1, totalRandom);
+    cellDistances2_2_rand = cell(1, totalRandom);
 
+    path2save2 = [pathFolders(nFolder).folder,'\markerDistancesRandom1Fixed2.mat'];
+    
+    if ~exist(path2save2,'file')
+        for nRand = 1:totalRandom
+            randPos = randperm(length(posibleInd));
+            selectedId = posibleInd(randPos(1:size(coordMark1,1)));
+            [randCoord1x, randCoord1y] = ind2sub(size(maskROIpoly),selectedId);
+            randCoordMark1 = [randCoord1x,randCoord1y];
+            [cellDistances1_1_rand{nRand},cellDistances1_2_rand{nRand},cellDistances2_1_rand{nRand},cellDistances2_2_rand{nRand}] = measureGeodesicDistances(randCoordMark1,coordMark2,maskROIpoly,'shit');
+
+            if rem(nRand,20)==0
+                save(path2save2,'cellDistances1_1_rand','cellDistances1_2_rand','cellDistances2_1_rand','cellDistances2_2_rand','-v7.3')
+            end
+        end    
+    end
+    
+    %% make randomization for the marker 2 (plaques), with the marker 1 fixed
+    path2save3 = [pathFolders(nFolder).folder,'\markerDistancesRandom2Fixed1.mat'];
+    cellDistances1_1_rand = cell(1, totalRandom);
+    cellDistances1_2_rand = cell(1, totalRandom);
+    cellDistances2_1_rand = cell(1, totalRandom);
+    cellDistances2_2_rand = cell(1, totalRandom);   
+    
+    if ~exist(path2save3,'file')
+        for nRand = 1:totalRandom
+            randPos = randperm(length(posibleInd));
+            selectedId = posibleInd(randPos(1:size(coordMark2,1)));
+            [randCoord2x, randCoord2y] = ind2sub(size(maskROIpoly),selectedId);
+            randCoordMark2 = [randCoord2x,randCoord2y];
+            [cellDistances1_1_rand{nRand},cellDistances1_2_rand{nRand},cellDistances2_1_rand{nRand},cellDistances2_2_rand{nRand}] = measureGeodesicDistances(coordMark1,randCoordMark2,maskROIpoly,'shit');
+
+            if rem(nRand,20)==0
+                save(path2save3,'cellDistances1_1_rand','cellDistances1_2_rand','cellDistances2_1_rand','cellDistances2_2_rand','-v7.3')
+            end
+        end  
+    end
+    
     clearvars -except pathFolders nFolder
 end
