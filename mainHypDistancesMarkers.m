@@ -3,7 +3,7 @@
 pathFolders = dir('**/*.xls');
 addpath(genpath('src'))
 
-for nFolder = 1 : size(pathFolders,1)
+for nFolder = size(pathFolders,1):-1:1
     
     T = readtable([pathFolders(nFolder).folder '\' pathFolders(nFolder).name],'Sheet','Quantities - Raw');
     pathRois = dir([pathFolders(nFolder).folder '\*.csv']);
@@ -92,11 +92,11 @@ for nFolder = 1 : size(pathFolders,1)
     
     %% make randomization for the marker 1 (integrin), with the marker 2 fixed
     posibleInd = find(maskROIpoly(:)>0);
-    totalRandom = 100;
-    cellDistances1_1_rand = cell(1, totalRandom);
-    cellDistances1_2_rand = cell(1, totalRandom);
-    cellDistances2_1_rand = cell(1, totalRandom);
-    cellDistances2_2_rand = cell(1, totalRandom);
+    totalRandom = 500;
+    cellDistances1rand_1rand = cell(totalRandom,1);
+    cellDistances1rand_2fixed = cell(totalRandom,1);
+    cellDistances2fixed_1rand = cell(totalRandom,1);
+    cellDistances2fixed_2fixed = cell(totalRandom,1);
 
     path2save2 = [pathFolders(nFolder).folder,'\markerDistancesRandom1Fixed2.mat'];
     
@@ -106,20 +106,20 @@ for nFolder = 1 : size(pathFolders,1)
             selectedId = posibleInd(randPos(1:size(coordMark1,1)));
             [randCoord1x, randCoord1y] = ind2sub(size(maskROIpoly),selectedId);
             randCoordMark1 = [randCoord1x,randCoord1y];
-            [cellDistances1_1_rand{nRand},cellDistances1_2_rand{nRand},cellDistances2_1_rand{nRand},cellDistances2_2_rand{nRand}] = measureGeodesicDistances(randCoordMark1,coordMark2,maskROIpoly,'shit');
+            [cellDistances1rand_1rand{nRand},cellDistances1rand_2fixed{nRand},cellDistances2fixed_1rand{nRand},cellDistances2fixed_2fixed{nRand}] = measureGeodesicDistances(randCoordMark1,coordMark2,maskROIpoly,'shit');
 
             if rem(nRand,20)==0
-                save(path2save2,'cellDistances1_1_rand','cellDistances1_2_rand','cellDistances2_1_rand','cellDistances2_2_rand','-v7.3')
+                save(path2save2,'cellDistances1rand_1rand','cellDistances1rand_2fixed','cellDistances2fixed_1rand','cellDistances2fixed_2fixed','-v7.3')
             end
         end    
     end
     
-    %% make randomization for the marker 2 (plaques), with the marker 1 fixed
+    %% make randomization for the marker 2 (plaques), fixing the marker 1
     path2save3 = [pathFolders(nFolder).folder,'\markerDistancesRandom2Fixed1.mat'];
-    cellDistances1_1_rand = cell(1, totalRandom);
-    cellDistances1_2_rand = cell(1, totalRandom);
-    cellDistances2_1_rand = cell(1, totalRandom);
-    cellDistances2_2_rand = cell(1, totalRandom);   
+    cellDistances1fixed_1fixed = cell(totalRandom, 1);
+    cellDistances1fixed_2rand = cell(totalRandom, 1);
+    cellDistances2rand_1fixed = cell(totalRandom, 1);
+    cellDistances2rand_2rand = cell(totalRandom, 1);   
     
     if ~exist(path2save3,'file')
         for nRand = 1:totalRandom
@@ -127,10 +127,10 @@ for nFolder = 1 : size(pathFolders,1)
             selectedId = posibleInd(randPos(1:size(coordMark2,1)));
             [randCoord2x, randCoord2y] = ind2sub(size(maskROIpoly),selectedId);
             randCoordMark2 = [randCoord2x,randCoord2y];
-            [cellDistances1_1_rand{nRand},cellDistances1_2_rand{nRand},cellDistances2_1_rand{nRand},cellDistances2_2_rand{nRand}] = measureGeodesicDistances(coordMark1,randCoordMark2,maskROIpoly,'shit');
+            [cellDistances1fixed_1fixed{nRand},cellDistances1fixed_2rand{nRand},cellDistances2rand_1fixed{nRand},cellDistances2rand_2rand{nRand}] = measureGeodesicDistances(coordMark1,randCoordMark2,maskROIpoly,'shit');
 
             if rem(nRand,20)==0
-                save(path2save3,'cellDistances1_1_rand','cellDistances1_2_rand','cellDistances2_1_rand','cellDistances2_2_rand','-v7.3')
+                save(path2save3,'cellDistances1fixed_1fixed','cellDistances1fixed_2rand','cellDistances2rand_1fixed','cellDistances2rand_2rand','-v7.3')
             end
         end  
     end
