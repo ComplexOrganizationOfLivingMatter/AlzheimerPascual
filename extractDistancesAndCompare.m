@@ -77,6 +77,19 @@ for nFolder = size(pathFolders,1):-1:1
         stdMin2fix_1rand(nRand) = std(cellfun(@(x) x(1),cellDistances2fixed_1rand{nRand}));
     end
     
+%     h = figure('units','normalized','outerposition',[0 0 1 1],'Visible','on');
+%     histogram(meanMin1rand_2fix.*pixels2microns,'Normalization','probability','FaceAlpha',1)%,'BinWidth',5,'BinLimits',[200 2000]
+%     hold on 
+%     plot(meanMinDistance1_2raw.*pixels2microns,0.005,'.r','MarkerSize',20)
+%     legend({'random integrin fixed plaques','raw'},'Location','best')
+%     xlabel('mean distance (micrometers)')
+%     ylabel('probability')
+%     spName = strsplit(pathFolders(nFolder).folder,'\');
+%     title([lower(spName{end}) ' - distances from integrins to plaques'])
+%     set(gca,'FontSize', 24,'FontName','Helvetica','YGrid','on','TickDir','out','Box','off');
+%     print(h,[pathFolders(nFolder).folder '\histogramDistances_' lower(spName{end}) '_' date],'-dtiff','-r300')
+%     close all
+    
     meanMeansMinDistance1rand_2fix = mean(meanMin1rand_2fix);
     stdMeansMinDistance1rand_2fix = std(meanMin1rand_2fix);
     meanMeansMinDistance2fix_1rand = mean(meanMin2fix_1rand);
@@ -132,4 +145,4 @@ T_StdDistances = array2table(tableDistancesStds(:,5:end).*pixels2microns,'Variab
     'meanStds2rand_1fix','stdStds2rand_1fix','meanStds1rand_2fix','stdStds1rand_2fix','meanStds2fix_1rand','stdStds2fix_1rand',...
     'meanStds1rand_2rand','stdStds1rand_2rand','meanStds2rand_1rand','stdStds2rand_1rand'});
 
-writetable([T_MeanDistances,T_StdDistances],'results/tableMarkersDistances.xlsx')
+% writetable([T_MeanDistances,T_StdDistances],'results/tableMarkersDistances.xlsx')

@@ -114,38 +114,38 @@ for nFolder = size(pathFolders,1):-1:1
         end    
 %     end
     
-    %% make randomization for the marker 2 (plaques), fixing the marker 1. In addition, compare random markers 1 and 2
-    path2save3 = [pathFolders(nFolder).folder,'\markerDistancesFixed1Random2.mat'];
-    path2save4 = [pathFolders(nFolder).folder,'\markerDistancesRandom1Random2.mat'];
+        %% make randomization for the marker 2 (plaques), fixing the marker 1. In addition, compare random markers 1 and 2
+        path2save3 = [pathFolders(nFolder).folder,'\markerDistancesFixed1Random2.mat'];
+        path2save4 = [pathFolders(nFolder).folder,'\markerDistancesRandom1Random2.mat'];
 
-    cellDistances1fixed_1fixed = cell(totalRandom, 1);
-    cellDistances1fixed_2rand = cell(totalRandom, 1);
-    cellDistances2rand_1fixed = cell(totalRandom, 1);
-    cellDistances2rand_2rand = cell(totalRandom, 1);   
-    cellDistances1rand_2rand = cell(totalRandom, 1);
-    cellDistances2rand_1rand = cell(totalRandom, 1);
+        cellDistances1fixed_1fixed = cell(totalRandom, 1);
+        cellDistances1fixed_2rand = cell(totalRandom, 1);
+        cellDistances2rand_1fixed = cell(totalRandom, 1);
+        cellDistances2rand_2rand = cell(totalRandom, 1);   
+        cellDistances1rand_2rand = cell(totalRandom, 1);
+        cellDistances2rand_1rand = cell(totalRandom, 1);
 
-    if ~exist(path2save3,'file')
-        for nRand = 1:totalRandom
-            
-            randPos = randperm(length(posibleInd));
-            selectedId = posibleInd(randPos(1:size(coordMark2,1)));
-            [randCoord2x, randCoord2y] = ind2sub(size(maskROIpoly),selectedId);
-            randCoordMark2 = [randCoord2x,randCoord2y];
-            
-            randPos = randperm(length(posibleInd));
-            selectedId = posibleInd(randPos(1:size(coordMark1,1)));
-            [randCoord1x, randCoord1y] = ind2sub(size(maskROIpoly),selectedId);
-            randCoordMark1 = [randCoord1x,randCoord1y];
-            
-            [cellDistances1fixed_1fixed{nRand},cellDistances1fixed_2rand{nRand},cellDistances2rand_1fixed{nRand},cellDistances2rand_2rand{nRand},cellDistances1rand_2rand{nRand},cellDistances2rand_1rand{nRand}] = measureGeodesicDistances(coordMark1,randCoordMark2,maskROIpoly,randCoordMark1,'2 randoms');
-            if rem(nRand,20)==0
-                save(path2save3,'cellDistances1fixed_1fixed','cellDistances1fixed_2rand','cellDistances2rand_1fixed','cellDistances2rand_2rand','-v7.3')
-                save(path2save4,'cellDistances1rand_2rand','cellDistances2rand_1rand','-v7.3')
-            end
-        end  
-    end
-    
-    clearvars -except pathFolders nFolder
+        if ~exist(path2save3,'file')
+            for nRand = 1:totalRandom
+
+                randPos = randperm(length(posibleInd));
+                selectedId = posibleInd(randPos(1:size(coordMark2,1)));
+                [randCoord2x, randCoord2y] = ind2sub(size(maskROIpoly),selectedId);
+                randCoordMark2 = [randCoord2x,randCoord2y];
+
+                randPos = randperm(length(posibleInd));
+                selectedId = posibleInd(randPos(1:size(coordMark1,1)));
+                [randCoord1x, randCoord1y] = ind2sub(size(maskROIpoly),selectedId);
+                randCoordMark1 = [randCoord1x,randCoord1y];
+
+                [cellDistances1fixed_1fixed{nRand},cellDistances1fixed_2rand{nRand},cellDistances2rand_1fixed{nRand},cellDistances2rand_2rand{nRand},cellDistances1rand_2rand{nRand},cellDistances2rand_1rand{nRand}] = measureGeodesicDistances(coordMark1,randCoordMark2,maskROIpoly,randCoordMark1,'2 randoms');
+                if rem(nRand,20)==0
+                    save(path2save3,'cellDistances1fixed_1fixed','cellDistances1fixed_2rand','cellDistances2rand_1fixed','cellDistances2rand_2rand','-v7.3')
+                    save(path2save4,'cellDistances1rand_2rand','cellDistances2rand_1rand','-v7.3')
+                end
+            end  
+        end
+
+        clearvars -except pathFolders nFolder
     end
 end
